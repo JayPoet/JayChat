@@ -1,6 +1,6 @@
 /* JayChat service worker: offline app shell + push handling.
  * Bump VERSION whenever you deploy a new index.html so clients refresh the shell. */
-const VERSION = 'jaychat-v1';
+const VERSION = 'jaychat-v2';
 const SHELL = ['./', './index.html', './manifest.json', './icon.svg', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

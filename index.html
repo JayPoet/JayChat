@@ -179,6 +179,33 @@ select.inp{appearance:none;width:auto;padding:9px 12px}
 .keybox{font:700 19px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-align:center;padding:18px 10px;border-radius:18px;background:var(--in);border:1px solid var(--a1);user-select:all}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:14px}.check input{margin-top:3px;width:18px;height:18px;accent-color:var(--a1)}
 .pick{display:flex;align-items:center;gap:14px}
+
+/* ---- v2 additions ---- */
+.msg .col{display:flex;flex-direction:column;max-width:min(78%,520px);min-width:0}
+.msg.out .col{align-items:flex-end}.msg.in .col{align-items:flex-start}
+.col .bubble{max-width:100%}
+.reacts{display:flex;gap:4px;flex-wrap:wrap;margin-top:-5px;padding:0 8px;position:relative;z-index:1}
+.rchip{font-size:13px;padding:2px 8px;border-radius:99px;background:var(--glass2);border:1px solid var(--stroke);box-shadow:var(--shadow)}
+.rchip.mine{border-color:var(--a1);background:rgba(47,91,255,.2)}
+.quote{border-left:3px solid var(--a3);padding:4px 8px;margin:0 0 5px;border-radius:8px;background:rgba(0,0,0,.14);font-size:13px;cursor:pointer;white-space:normal}
+.quote b{display:block;font-size:12px}.quote span{display:block;opacity:.85;max-height:2.8em;overflow:hidden}
+.bubble.flash{animation:flash 1.2s}@keyframes flash{30%{box-shadow:0 0 0 4px var(--a3)}}
+.replybar{display:flex;align-items:center;gap:10px;margin:0 10px 6px;padding:8px 12px;border-radius:18px;border-left:3px solid var(--a1)}
+.searchbar{display:flex;align-items:center;gap:8px;margin:8px 10px 0;padding:4px 6px 4px 14px;border-radius:18px}
+.searchbar input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:8px 0}
+mark{background:#ffd54a;color:#111;border-radius:4px;padding:0 2px}
+.emojis{display:flex;justify-content:space-between;gap:6px}
+.emojis button{font-size:26px;width:46px;height:46px;border-radius:14px;background:var(--in)}
+.emojis button.mine{outline:2px solid var(--a1)}
+.tree{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--glass);border:1px solid var(--stroke);margin-left:6px;color:var(--a1)}
+.tag.bad{color:var(--danger)}
+#lock{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:linear-gradient(160deg,var(--bg1),var(--bg2));padding:20px}
+.lockbox{width:min(100%,340px);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.dots{display:flex;gap:12px;height:18px}.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink2)}.dots i.f{background:var(--grad);border-color:transparent}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+.pad .key{height:62px;border-radius:20px;font-size:22px;font-weight:650;background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(16px);display:grid;place-items:center}
+.pad .key:active{transform:scale(.94)}
 </style>
 </head>
 <body>
@@ -205,16 +232,18 @@ select.inp{appearance:none;width:auto;padding:9px 12px}
       <header class="chead glass">
         <button class="icon-btn back" id="btnBack" aria-label="Back"></button>
         <button class="row grow" id="btnInfo" style="min-width:0;text-align:left"><span id="hAv"></span><span class="grow"><div class="nm" id="hName"></div><div class="st" id="hStatus"></div></span></button>
-        <button class="icon-btn" id="btnInfo2" aria-label="Chat info"></button>
+        <button class="icon-btn" id="btnSearch" aria-label="Search in chat"></button><button class="icon-btn" id="btnInfo2" aria-label="Chat info"></button>
       </header>
+      <div id="searchBar" class="searchbar glass" hidden><input id="sq" placeholder="Search this chat" autocomplete="off" aria-label="Search this chat"><span class="tiny" id="sCount"></span><button class="btn ghost sm" id="sMore">Older</button><button class="icon-btn" id="sClose" aria-label="Close search"></button></div>
       <div id="msgs" aria-live="polite"></div>
       <div class="typing" id="typing"></div>
+      <div id="replyBar" class="replybar glass" hidden></div>
       <div id="composerWrap"></div>
     </div>
   </section>
 </div>
 
-<div id="sheets"></div><div id="toasts"></div><div id="lightbox" hidden></div>
+<div id="lock" hidden></div><div id="sheets"></div><div id="toasts"></div><div id="lightbox" hidden></div>
 <input type="file" id="filePick" accept="image/*" hidden>
 <svg width="0" height="0" style="position:absolute"><defs>
   <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f5bff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient>
@@ -278,6 +307,10 @@ const IC = {
   ban: '<circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/>', logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>', camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'
 };
+Object.assign(IC, {
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>', reply: '<path d="M9 17l-5-5 5-5"/><path d="M4 12h11a5 5 0 0 1 5 5v2"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
+});
 const ic = n => `<svg class="ic" viewBox="0 0 24 24">${IC[n]}</svg>`;
 const logo = (s = 76) => `<svg class="logo" style="width:${s}px;height:${s}px" viewBox="0 0 512 512"><use href="#logo"/></svg>`;
 
@@ -410,8 +443,10 @@ const S = {
   uid: null, profile: null, prefs: { ...DEFAULT_PREFS }, priv: null, recoveryKey: null, onboarding: false,
   chats: new Map(), chatsReady: false, users: new Map(), userUnsubs: new Map(), blocks: new Set(),
   previews: new Map(), keys: new Map(), unsubs: [], active: null, msgUnsub: null, msgs: [], msgLimit: PAGE, msgsReady: false,
-  decCache: new Map(), imgCache: new Map(), imgInflight: new Map(), uploads: [], filter: "", hb: null, installEvt: null, lastMark: ""
+  decCache: new Map(), imgCache: new Map(), imgInflight: new Map(), uploads: [], filter: "", hb: null, installEvt: null, lastMark: "",
+  admins: new Set(), bans: new Set(), reacts: new Map(), replyTo: null, search: "", isAdmin: false, removed: false, hiddenAt: 0
 };
+const inviteValid = d => d.exists() && (d.data().multi === true ? (d.data().uses || 0) < (d.data().maxUses || 0) : !d.data().used);
 const userRef = uid => doc(db, "users", uid);
 const prefsRef = () => doc(db, "users", S.uid, "private", "prefs");
 const chatRef = id => doc(db, "chats", id);
@@ -445,7 +480,7 @@ function gate(step, extra) {
       const b = $("#gGo"); b.disabled = true; $("#gErr").textContent = "";
       try {
         const d = await getDoc(doc(db, "invites", code));
-        if (!d.exists() || d.data().used) throw Object.assign(new Error("This invite code is invalid or has already been used."), { code: "x" });
+        if (!inviteValid(d)) throw Object.assign(new Error("This invite code is invalid or has already been used."), { code: "x" });
         Onb.code = code; Onb.inviter = { uid: d.data().createdBy, name: d.data().createdByName || null, pub: d.data().pub || null };
         gate("profile");
       } catch (e) { $("#gErr").textContent = e.code === "x" ? e.message : errMsg(e); b.disabled = false; }
@@ -505,20 +540,25 @@ async function createAccount(username, displayName) {
     const uid = user.uid, ident = await Crypto.genIdentity(), pub = JSON.stringify(ident.pubJwk);
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const wrapped = await Crypto.encBytes(await Crypto.wrapKey(recovery, salt), enc.encode(JSON.stringify(ident.privJwk)), "jaychat-key");
-    const inv = await getDoc(doc(db, "invites", Onb.code));
-    if (!inv.exists() || inv.data().used) throw Object.assign(new Error("This invite was already used."), { code: "permission-denied" });
-    const inviterUid = inv.data().createdBy, inviterPub = inv.data().pub, realInviter = !!inviterPub && inviterUid && inviterUid !== "admin";
-    const b = writeBatch(db);
-    b.set(userRef(uid), { username, usernameLower: lower, displayName, photoURL: null, pub, invitedBy: inviterUid, inviteCode: Onb.code, online: false, lastSeen: serverTimestamp(), createdAt: serverTimestamp() });
-    b.set(doc(db, "usernames", lower), { uid, username });
-    b.update(doc(db, "invites", Onb.code), { used: true, usedBy: uid, usedAt: serverTimestamp() });
-    b.set(doc(db, "users", uid, "private", "keys"), { v: 1, salt: b64(salt), ...wrapped });
-    b.set(doc(db, "users", uid, "private", "prefs"), DEFAULT_PREFS);
-    if (realInviter) { // accepting an invite = friendship + private chat with the inviter
-      const parts = [inviterUid, uid].sort();
-      b.set(chatRef(parts.join("_")), { type: "private", participants: parts, pubs: { [inviterUid]: inviterPub, [uid]: pub }, state: {}, ttl: 0, lastMessage: null, createdBy: uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    let attempt = 0;
+    for (;;) { // multi-use codes can race with other joiners, so retry once with fresh data
+      const inv = await getDoc(doc(db, "invites", Onb.code));
+      if (!inviteValid(inv)) throw Object.assign(new Error("This invite was already used."), { code: "permission-denied" });
+      const iv = inv.data(), multi = iv.multi === true;
+      const inviterUid = iv.createdBy, inviterPub = iv.pub, realInviter = !!inviterPub && inviterUid && inviterUid !== "admin";
+      const b = writeBatch(db);
+      b.set(userRef(uid), { username, usernameLower: lower, displayName, photoURL: null, pub, invitedBy: inviterUid, inviteCode: Onb.code, online: false, lastSeen: serverTimestamp(), createdAt: serverTimestamp() });
+      b.set(doc(db, "usernames", lower), { uid, username });
+      b.update(doc(db, "invites", Onb.code), multi ? { uses: (iv.uses || 0) + 1 } : { used: true, usedBy: uid, usedAt: serverTimestamp() });
+      b.set(doc(db, "users", uid, "private", "keys"), { v: 1, salt: b64(salt), ...wrapped });
+      b.set(doc(db, "users", uid, "private", "prefs"), DEFAULT_PREFS);
+      if (realInviter) { // accepting an invite = friendship + private chat with the inviter
+        const parts = [inviterUid, uid].sort();
+        b.set(chatRef(parts.join("_")), { type: "private", participants: parts, pubs: { [inviterUid]: inviterPub, [uid]: pub }, state: {}, ttl: 0, lastMessage: null, createdBy: uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      }
+      try { await b.commit(); break; }
+      catch (e) { if (multi && attempt++ === 0 && String(e.code).includes("permission-denied")) { await sleep(400); continue; } throw e; }
     }
-    await b.commit();
     await idb.set("priv:" + uid, await Crypto.importPriv(ident.privJwk));
     S.uid = uid; S.profile = { username, displayName, pub };
     if (Onb.avatar) { try { await uploadAvatar(uid, Onb.avatar); } catch (e) { console.warn("avatar", e); } }
@@ -572,10 +612,13 @@ onAuthStateChanged(auth, async user => {
 
 async function startSession(user) {
   showScreen("splash"); $("#splash").innerHTML = '<div class="spinner"></div>';
-  S.uid = user.uid;
+  S.uid = user.uid; S.removed = false;
+  const ban = await getDoc(doc(db, "bans", S.uid)).catch(() => null);
+  if (ban && ban.exists()) { const pp = await getDoc(userRef(S.uid)).catch(() => null); if (pp?.exists()) S.profile = { uid: S.uid, ...pp.data() }; showRemoved(); return; }
   const p = await getDoc(userRef(S.uid));
   if (!p.exists()) throw new Error("noprofile");
   S.profile = { uid: S.uid, ...p.data() };
+  await requireUnlock();
   await ensurePrivateKey(S.uid); if (!S.priv) return;
   const pd = await getDoc(prefsRef()).catch(() => null);
   S.prefs = { ...DEFAULT_PREFS, ...(pd?.exists() ? pd.data() : {}) };
@@ -584,17 +627,21 @@ async function startSession(user) {
   S.unsubs.push(onSnapshot(userRef(S.uid), s => { if (s.exists()) { S.profile = { uid: S.uid, ...s.data() }; S.users.set(S.uid, S.profile); renderMe(); } }));
   S.unsubs.push(onSnapshot(query(collection(db, "blocks"), where("blocker", "==", S.uid)), s => { S.blocks = new Set(s.docs.map(d => d.data().blocked)); renderList(); if (S.active) renderChatChrome(); }));
   S.unsubs.push(onSnapshot(query(collection(db, "chats"), where("participants", "array-contains", S.uid)), onChats, e => console.error("chats", e)));
+  S.unsubs.push(onSnapshot(doc(db, "bans", S.uid), s => { if (s.exists() && !S.removed) showRemoved(); }, () => { }));
+  S.unsubs.push(onSnapshot(collection(db, "admins"), s => { S.admins = new Set(s.docs.map(d => d.id)); S.isAdmin = S.admins.has(S.uid); if (S.active) renderMessages(); }, () => { }));
+  S.unsubs.push(onSnapshot(collection(db, "bans"), s => { S.bans = new Set(s.docs.map(d => d.id)); renderList(); if (S.active) { renderChatChrome(); renderMessages(); } }, () => { }));
+  claimFounder();
   showScreen("app"); renderShell(); startPresence(); routeFromHash();
   if (S.prefs.notify && "Notification" in window && Notification.permission === "granted") enablePush(true);
 }
 function stopSession() {
   S.unsubs.forEach(u => u()); S.unsubs = []; S.userUnsubs.forEach(u => u()); S.userUnsubs.clear();
-  S.msgUnsub?.(); S.msgUnsub = null; clearInterval(S.hb); S.chats.clear(); S.users.clear(); S.keys.clear(); S.previews.clear();
+  S.msgUnsub?.(); S.msgUnsub = null; S.reactUnsub?.(); S.reactUnsub = null; S.admins = new Set(); S.bans = new Set(); S.isAdmin = false; clearInterval(S.hb); S.chats.clear(); S.users.clear(); S.keys.clear(); S.previews.clear();
   S.active = null; S.chatsReady = false; S.priv = null; S.uid = null; S.profile = null; S.prefs = { ...DEFAULT_PREFS };
 }
 async function doSignOut() {
   if (S.uid) await setPresence(false).catch(() => { });
-  stopSession(); try { await signOut(auth); await idb.clear(); await terminate(db); await clearIndexedDbPersistence(db); } catch (e) { console.warn(e); }
+  stopSession(); localStorage.removeItem("jc-lock"); try { await signOut(auth); await idb.clear(); await terminate(db); await clearIndexedDbPersistence(db); } catch (e) { console.warn(e); }
   location.replace(location.pathname);
 }
 
@@ -687,7 +734,11 @@ function renderShell() {
   $("#btnInfo").onclick = $("#btnInfo2").onclick = openChatInfo;
   $("#filter").oninput = e => { S.filter = e.target.value.toLowerCase(); renderList(); };
   $("#list").onclick = e => { const b = e.target.closest("[data-chat]"); if (b) location.hash = "#/chat/" + b.dataset.chat; const i = e.target.closest("[data-act]"); if (i) i.dataset.act === "invite" ? openInvite() : openNewChat(); };
-  $("#msgs").onclick = onMsgClick; renderList();
+  $("#msgs").onclick = onMsgClick;
+  $("#btnSearch").innerHTML = ic("search"); $("#sClose").innerHTML = ic("x");
+  $("#btnSearch").onclick = toggleSearch; $("#sClose").onclick = closeSearch;
+  $("#sq").oninput = e => { S.search = e.target.value.trim().toLowerCase(); renderMessages(); };
+  $("#sMore").onclick = () => { S.msgLimit += 200; subscribeMessages(false); toast("Loading older messages…"); }; renderList();
 }
 function renderMe() { const b = $("#btnMe"); if (b) { b.innerHTML = avatar(S.profile, 36); b.style.width = b.style.height = "40px"; } }
 function renderList() {
@@ -713,7 +764,7 @@ function routeFromHash() {
 addEventListener("hashchange", () => { if (S.uid) routeFromHash(); });
 
 function closeChat(fromRoute) {
-  S.msgUnsub?.(); S.msgUnsub = null; S.active = null; S.msgs = [];
+  S.msgUnsub?.(); S.msgUnsub = null; S.reactUnsub?.(); S.reactUnsub = null; S.reacts = new Map(); closeSearch(); setReply(null); S.active = null; S.msgs = [];
   $("#app").classList.remove("in-chat"); $("#chatView").hidden = true; renderList(); updateBadge();
   if (!fromRoute && location.hash.startsWith("#/chat/")) history.replaceState(null, "", location.pathname);
 }
@@ -723,7 +774,7 @@ function openChat(id) {
   if (!c) { if (S.chatsReady) { toast("That conversation isn't available.", true); history.replaceState(null, "", location.pathname); } else setTimeout(() => S.uid && routeFromHash(), 400); return; }
   S.msgUnsub?.(); S.active = id; S.msgs = []; S.msgsReady = false; S.msgLimit = PAGE; S.uploads = [];
   $("#app").classList.add("in-chat"); $("#chatView").hidden = false; $("#msgs").innerHTML = '<div class="empty"><div class="spinner"></div></div>';
-  renderChatChrome(); subscribeMessages(); renderList(); markRead(); setTimeout(() => $("#input")?.focus({ preventScroll: true }), 350);
+  renderChatChrome(); subscribeMessages(); subscribeReactions(); closeSearch(); setReply(null); renderList(); markRead(); setTimeout(() => $("#input")?.focus({ preventScroll: true }), 350);
 }
 function subscribeMessages(keepAnchor) {
   S.msgUnsub?.(); const id = S.active;
@@ -734,6 +785,7 @@ function subscribeMessages(keepAnchor) {
       const m = { id: d.id, ...d.data({ serverTimestamps: "estimate" }), pending: d.metadata.hasPendingWrites };
       const ck = d.id + (m.enc?.iv || ""); let t = S.decCache.get(ck);
       if (t === undefined) { try { t = key ? await Crypto.decText(key, m.enc, id) : null; } catch { t = null; } if (t !== null) S.decCache.set(ck, t); }
+      if (m.reply?.enc) { const rk = "q" + d.id + m.reply.enc.iv; let q = S.decCache.get(rk); if (q === undefined) { try { q = key ? await Crypto.decText(key, m.reply.enc, id) : null; } catch { q = null; } if (q !== null) S.decCache.set(rk, q); } m.replyText = q; }
       m.text = t; return m;
     }));
     if (S.active !== id) return;
@@ -755,7 +807,7 @@ function renderChatChrome() {
   $("#hAv").innerHTML = c.type === "group" ? `<span class="av" style="--s:42px;--h:${hash(c.id) % 360}">${esc([...(c.name || "G")][0].toUpperCase())}</span>` : avatar(pu, 42, pu && isOnline(pu));
   $("#hName").textContent = chatTitle(c); updateTyping();
   const blockedByMe = pu && S.blocks.has(pu.uid), cw = $("#composerWrap");
-  const mode = peerGone(c) ? "gone" : blockedByMe ? "blocked" : "ok";
+  const removed = pu && S.bans.has(pu.uid), mode = removed ? "removed" : peerGone(c) ? "gone" : blockedByMe ? "blocked" : "ok";
   if (cw.dataset.mode !== mode + c.id) {
     cw.dataset.mode = mode + c.id;
     if (mode === "ok") {
@@ -766,7 +818,7 @@ function renderChatChrome() {
       send.onclick = doSend; $("#btnAttach").onclick = () => { const f = $("#filePick"); f.onchange = () => { const file = f.files[0]; f.value = ""; if (file) sendImage(file); }; f.click(); };
     } else if (mode === "blocked") {
       cw.innerHTML = `<div class="banner glass">You blocked ${esc(pu.displayName)}. <button class="link" id="unb">Unblock</button></div>`; $("#unb").onclick = () => toggleBlock(pu.uid);
-    } else cw.innerHTML = `<div class="banner glass">This person deleted their account. You can no longer send messages here.</div>`;
+    } else cw.innerHTML = `<div class="banner glass">${mode === "removed" ? "This person was removed from JayChat." : "This person deleted their account. You can no longer send messages here."}</div>`;
   }
 }
 let typingAt = 0;
@@ -788,14 +840,16 @@ function renderMessages(first, keepAnchor) {
   const c = S.chats.get(S.active), el = $("#msgs"); if (!c) return;
   const prevH = el.scrollHeight, near = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
   const now = Date.now();
-  const vis = S.msgs.filter(m => !S.blocks.has(m.sender) || m.sender === S.uid).filter(m => {
+  let vis = S.msgs.filter(m => (!S.blocks.has(m.sender) || m.sender === S.uid) && !S.bans.has(m.sender)).filter(m => {
     const ex = ms(m.expireAt); if (ex && ex < now) { if (m.sender === S.uid && !m.pending) cleanupExpired(c, m); return false; } return true;
   });
+  if (S.search) vis = vis.filter(m => (m.text || "").toLowerCase().includes(S.search));
   const others = c.participants.filter(p => p !== S.uid);
   const readMax = S.prefs.receipts ? Math.max(0, ...others.map(p => ms(c.state?.[p]?.readAt))) : 0;
   let html = "", lastDay = "";
   if (S.msgs.length >= S.msgLimit) html += `<button class="btn ghost sm more" id="btnMore">Load earlier messages</button>`;
-  if (!vis.length && S.msgsReady && !S.uploads.length) html += `<div class="empty">${ic("lock")}<h3>Say hi \uD83D\uDC4B</h3><span>Messages here are end-to-end encrypted. Only people in this chat can read them.</span></div>`;
+  if (S.search) { const cn = $("#sCount"); if (cn) cn.textContent = vis.length + " found"; }
+  if (!vis.length && S.msgsReady && !S.uploads.length && !S.search) html += `<div class="empty">${ic("lock")}<h3>Say hi \uD83D\uDC4B</h3><span>Messages here are end-to-end encrypted. Only people in this chat can read them.</span></div>`;
   vis.forEach((m, i) => {
     const t = ms(m.createdAt) || now, dk = dayKey(t), mine = m.sender === S.uid, prev = vis[i - 1];
     if (dk !== lastDay) { html += `<div class="day">${esc(fmtDay(t))}</div>`; lastDay = dk; }
@@ -804,11 +858,14 @@ function renderMessages(first, keepAnchor) {
     if (m.type === "image" && m.img && typeof m.img.path === "string") {
       const w = Math.min(4000, Math.max(1, +m.img.w | 0)), h = Math.min(4000, Math.max(1, +m.img.h | 0)), cached = S.imgCache.get(m.img.path);
       body += `<div class="pic-wrap${cached ? " ready" : ""}" style="--ar:${w}/${h}" data-open="1"><img data-path="${esc(m.img.path)}" ${cached ? `src="${cached}"` : ""} alt="Photo"><span class="spinner"></span></div>`;
-      if (m.text) body += linkify(esc(m.text));
-    } else body += m.text === null ? "\uD83D\uDD12 Can't decrypt this message" : linkify(esc(m.text));
+      if (m.text) body += bodyHtml(m.text);
+    } else body += m.text === null ? "\uD83D\uDD12 Can't decrypt this message" : bodyHtml(m.text);
     let tick = "";
     if (mine) tick = m.pending ? ic("clock") : (readMax >= t ? `<span class="seen">${ic("checks")}</span>` : ic("check"));
-    html += `<div class="msg ${mine ? "out" : "in"}"><div class="bubble${m.text === null ? " bad" : ""}" data-id="${esc(m.id)}">${showName ? `<div class="who">${esc(U(m.sender).displayName)}</div>` : ""}${body}<div class="meta">${ms(m.expireAt) ? ic("clock") : ""}${fmtTime(t)}${tick}</div></div></div>`;
+    const rs = S.reacts.get(m.id); let reacts = "";
+    if (rs && rs.size) { const cnt = new Map(); rs.forEach((e, u) => { if (!S.blocks.has(u) && !S.bans.has(u)) cnt.set(e, (cnt.get(e) || 0) + 1); }); if (cnt.size) reacts = `<div class="reacts">${[...cnt].map(([e, n]) => `<button class="rchip${rs.get(S.uid) === e ? " mine" : ""}" data-react="${esc(e)}" data-mid="${esc(m.id)}">${esc(e)}${n > 1 ? " " + n : ""}</button>`).join("")}</div>`; }
+    const quote = m.reply ? `<div class="quote" data-goto="${esc(m.reply.id)}"><b>${esc(U(m.reply.sender).displayName)}</b><span>${esc(m.replyText ?? "…")}</span></div>` : "";
+    html += `<div class="msg ${mine ? "out" : "in"}"><div class="col"><div class="bubble${m.text === null ? " bad" : ""}" data-id="${esc(m.id)}">${showName ? `<div class="who">${esc(U(m.sender).displayName)}</div>` : ""}${quote}${body}<div class="meta">${ms(m.expireAt) ? ic("clock") : ""}${m.editedAt ? "edited " : ""}${fmtTime(t)}${tick}</div></div>${reacts}</div></div>`;
   });
   S.uploads.forEach(u => { html += `<div class="msg out"><div class="bubble"><div class="pic-wrap ready" style="--ar:${u.w}/${u.h}"><img src="${u.url}" alt="" style="opacity:.6"></div><div class="meta">Sending…</div></div></div>`; });
   el.innerHTML = html;
@@ -841,18 +898,13 @@ function hydrateImages(c) {
 function onMsgClick(e) {
   if (e.target.closest("#btnMore")) { S.msgLimit += PAGE; subscribeMessages(true); return; }
   if (e.target.closest("a")) return;
+  const rc = e.target.closest(".rchip"); if (rc) { const rm = S.msgs.find(x => x.id === rc.dataset.mid); if (rm) react(rm, rc.dataset.react); return; }
+  const qt = e.target.closest(".quote"); if (qt) { const tg = $(`.bubble[data-id="${CSS.escape(qt.dataset.goto)}"]`); if (tg) { tg.scrollIntoView({ block: "center", behavior: "smooth" }); tg.classList.add("flash"); setTimeout(() => tg.classList.remove("flash"), 1300); } else toast("That message isn't loaded. Tap Load earlier messages."); return; }
   const w = e.target.closest(".pic-wrap.ready");
   const b = e.target.closest(".bubble"); if (!b) return;
   const m = S.msgs.find(x => x.id === b.dataset.id); if (!m) return;
   if (w) { const lb = $("#lightbox"); lb.innerHTML = `<img src="${$("img", w).src}" alt="Photo"><button aria-label="Close">${ic("x")}</button>`; lb.hidden = false; lb.onclick = () => lb.hidden = true; return; }
   msgMenu(m);
-}
-function msgMenu(m) {
-  const mine = m.sender === S.uid;
-  sheet("Message", `${m.text ? `<button class="opt" id="mCopy">${ic("copy")} Copy text</button>` : ""}${mine ? `<button class="opt danger" id="mDel">${ic("trash")} Delete for everyone</button>` : '<p class="muted small">Only the sender can delete a message.</p>'}`, (b, close) => {
-    $("#mCopy", b)?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(m.text); toast("Copied"); } catch { toast("Copy failed", true); } close(); });
-    $("#mDel", b)?.addEventListener("click", async () => { close(); await deleteMessage(m); });
-  });
 }
 async function deleteMessage(m) {
   const c = S.chats.get(S.active); if (!c) return;
@@ -872,11 +924,12 @@ async function doSend() {
   const c = S.chats.get(S.active); if (!c) return; inp.value = ""; inp.style.height = "auto"; $("#btnSend").disabled = true;
   try {
     const key = await chatKey(c), body = await Crypto.encText(key, text, c.id), ttl = effectiveTtl(c);
+    const reply = S.replyTo ? { id: S.replyTo.id, sender: S.replyTo.sender, enc: await Crypto.encText(key, S.replyTo.text, c.id) } : null;
     const mref = doc(collection(db, "chats", c.id, "messages")), b = writeBatch(db);
-    b.set(mref, { sender: S.uid, chatId: c.id, type: "text", enc: body, createdAt: serverTimestamp(), expireAt: ttl ? Timestamp.fromMillis(Date.now() + ttl * 1000) : null });
+    b.set(mref, { sender: S.uid, chatId: c.id, type: "text", enc: body, createdAt: serverTimestamp(), expireAt: ttl ? Timestamp.fromMillis(Date.now() + ttl * 1000) : null, ...(reply ? { reply } : {}) });
     b.update(chatRef(c.id), { lastMessage: { from: S.uid, type: "text", enc: body, at: serverTimestamp() }, updatedAt: serverTimestamp(), [`state.${S.uid}.typingAt`]: 0, [`state.${S.uid}.lastOpened`]: serverTimestamp() });
     b.commit().catch(e => { toast("Message couldn't be sent. " + errMsg(e), true); });
-    typingAt = 0;
+    typingAt = 0; setReply(null);
   } catch (e) { toast(errMsg(e), true); inp.value = text; }
 }
 async function sendImage(file) {
@@ -931,7 +984,7 @@ async function setPref(patch) { Object.assign(S.prefs, patch); try { await setDo
 async function searchUsers(q) {
   q = q.trim().toLowerCase(); const col = collection(db, "users");
   const qq = q ? query(col, where("usernameLower", ">=", q), where("usernameLower", "<=", q + "\uf8ff"), limit(15)) : query(col, orderBy("usernameLower"), limit(20));
-  return (await getDocs(qq)).docs.map(d => ({ uid: d.id, ...d.data() })).filter(u => u.uid !== S.uid);
+  return (await getDocs(qq)).docs.map(d => ({ uid: d.id, ...d.data() })).filter(u => u.uid !== S.uid && !S.bans.has(u.uid));
 }
 function openNewChat() {
   let mode = "direct", picked = new Map(), results = [], timer;
@@ -975,32 +1028,6 @@ async function createGroup(name, members) {
 
 /* ---------- invites ---------- */
 const genCode = () => { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(16)); return [...r].map(x => A[x % 32]).join("").match(/.{4}/g).join("-"); };
-function openInvite() {
-  sheet("Invite a friend", `<p class="muted small">Each code works once and never expires until it's used. Anyone who joins with it gets a private chat with you.</p><div id="inv"></div><button class="btn primary" id="gen">${ic("userPlus")} Generate invite code</button><div class="sec">Your codes</div><div id="mine"><div class="spinner"></div></div>`, (b) => {
-    const link = c => `${location.origin}${location.pathname}#invite=${c}`;
-    const loadMine = async () => {
-      try {
-        const s = await getDocs(query(collection(db, "invites"), where("createdBy", "==", S.uid)));
-        const rows = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, c) => ms(c.createdAt) - ms(a.createdAt));
-        $("#mine", b).innerHTML = rows.length ? rows.map(r => `<div class="opt"><span class="grow"><b class="mono" style="font-family:ui-monospace,monospace">${esc(r.id)}</b><div class="muted small">${r.used ? "Used by " + esc(U(r.usedBy).displayName === "…" ? "a friend" : U(r.usedBy).displayName) : "Not used yet"}</div></span>${r.used ? "" : `<button class="btn ghost sm" data-del="${esc(r.id)}">Revoke</button>`}</div>`).join("") : '<p class="muted small">No codes yet.</p>';
-        rows.filter(r => r.used).forEach(r => watchUser(r.usedBy));
-      } catch (e) { $("#mine", b).textContent = errMsg(e); }
-    };
-    $("#gen", b).onclick = async () => {
-      const code = genCode(); $("#gen", b).disabled = true;
-      try {
-        await setDoc(doc(db, "invites", code), { createdBy: S.uid, createdByName: S.profile.displayName, createdByUsername: S.profile.username, pub: S.profile.pub, used: false, usedBy: null, createdAt: serverTimestamp() });
-        $("#inv", b).innerHTML = `<div class="code">${code}</div><div class="row" style="margin-top:10px"><button class="btn ghost sm grow" id="cc">${ic("copy")} Copy code</button><button class="btn primary sm grow" id="sh">${ic("share")} Share link</button></div>`;
-        $("#cc", b).onclick = async () => { try { await navigator.clipboard.writeText(code); toast("Code copied"); } catch { toast("Copy failed", true); } };
-        $("#sh", b).onclick = async () => { const text = `Join me on JayChat. Invite code: ${code}`; try { navigator.share ? await navigator.share({ title: "JayChat invite", text, url: link(code) }) : (await navigator.clipboard.writeText(text + "\n" + link(code)), toast("Invite link copied")); } catch { } };
-        loadMine();
-      } catch (e) { toast(errMsg(e), true); } $("#gen", b).disabled = false;
-    };
-    b.addEventListener("click", async e => { const d = e.target.closest("[data-del]"); if (!d) return; try { await deleteDoc(doc(db, "invites", d.dataset.del)); loadMine(); } catch (er) { toast(errMsg(er), true); } });
-    loadMine();
-  });
-}
-
 /* ---------- blocking / chat info ---------- */
 async function toggleBlock(uid) {
   try {
@@ -1020,12 +1047,14 @@ async function openChatInfo() {
     <div class="opt"><span class="grow">Disappearing messages<div class="muted small">Applies to new messages for everyone in this chat</div></span>${ttlSel}</div>
     ${pu && !pu.deleted ? `<div class="sec">Encryption</div><div class="muted small">Compare this safety code with ${esc(pu.displayName)} in person to be sure nobody is in the middle.</div><div class="code" id="safety" style="font-size:16px">…</div>
     <button class="opt ${S.blocks.has(pu.uid) ? "" : "danger"}" id="blk">${ic("ban")} ${S.blocks.has(pu.uid) ? "Unblock" : "Block"} ${esc(pu.displayName)}</button>` : ""}
+    ${c.type === "group" ? `<button class="opt" id="addp">${ic("userPlus")} Add people</button>` : ""}
     <button class="opt danger" id="clr">${ic("trash")} Delete my messages here</button>
     ${c.type === "group" ? `<button class="opt danger" id="lv">${ic("logout")} Leave group</button>` : peerGone(c) ? `<button class="opt danger" id="lv">${ic("trash")} Delete conversation</button>` : ""}`,
     (b, close) => {
       $("#mute", b).onclick = async e => { const on = !chatMuted(c.id); e.currentTarget.classList.toggle("on", on); await setPref({ muted: { ...S.prefs.muted, [c.id]: on } }); renderList(); };
       $("#ttl", b).onchange = async e => { try { await updateDoc(chatRef(c.id), { ttl: +e.target.value }); toast(+e.target.value ? "Disappearing messages on" : "Disappearing messages off"); } catch (er) { toast(errMsg(er), true); } };
       if (pu && !pu.deleted) { Crypto.safety(c.pubs[S.uid], c.pubs[pu.uid]).then(t => { const e = $("#safety", b); if (e) e.textContent = t; }); $("#blk", b).onclick = async () => { close(); await toggleBlock(pu.uid); }; }
+      $("#addp", b)?.addEventListener("click", () => { close(); openAddPeople(c); });
       $("#clr", b).onclick = async () => { close(); if (await confirmSheet("Delete your messages?", "This removes every message you sent in this chat, for everyone.", "Delete")) { await purgeMyMessages(c); toast("Your messages were deleted"); } };
       $("#lv", b)?.addEventListener("click", async () => { close(); if (await confirmSheet(c.type === "group" ? "Leave this group?" : "Delete this conversation?", "Your messages in it will be deleted.", c.type === "group" ? "Leave" : "Delete")) { try { await leaveChat(c); location.hash = ""; } catch (e) { toast(errMsg(e), true); } } });
     });
@@ -1058,6 +1087,7 @@ function openSettings() {
     <div class="sec">Notifications</div>${sw("sNot", S.prefs.notify && "Notification" in window && Notification.permission === "granted", "Message notifications", VAPID_KEY ? "" : "Shown while JayChat is open or in the background")}
     <div class="sec">Friends</div><button class="opt" id="sInv">${ic("userPlus")} Invite a friend</button>
     ${blocked.length ? `<div class="sec">Blocked</div>${blocked.map(u => `<div class="opt"><span class="grow">${esc(u.displayName)} <span class="muted small">@${esc(u.username)}</span></span><button class="btn ghost sm" data-ub="${esc(u.uid)}">Unblock</button></div>`).join("")}` : ""}
+    <div class="sec">Security</div>${lockRows()}${S.isAdmin ? `<button class="opt" id="sAdm">${ic("shield")} Admin tools</button>` : ""}
     <div class="sec">App</div>${S.installEvt ? `<button class="opt" id="sInst">${ic("download")} Install JayChat</button>` : '<p class="muted small">To install on iPhone: Share, then Add to Home Screen. On Android: browser menu, then Install app.</p>'}
     <button class="opt" id="sOut">${ic("logout")} Sign out of this device</button>
     <button class="opt danger" id="sDel">${ic("trash")} Delete my account</button>`, (b, close) => {
@@ -1069,6 +1099,7 @@ function openSettings() {
     $("#dnSave", b).onclick = async () => { const v = $("#dn", b).value.trim(); if (!v) return; try { await updateDoc(userRef(S.uid), { displayName: v }); toast("Saved"); } catch (e) { toast(errMsg(e), true); } };
     $("#chAv", b).onclick = () => { const f = $("#filePick"); f.onchange = async () => { const file = f.files[0]; f.value = ""; if (!file) return; try { toast("Uploading photo…"); await uploadAvatar(S.uid, (await resizeImage(file, 320, .85, true)).blob); toast("Photo updated"); close(); } catch (e) { toast(errMsg(e), true); } }; f.click(); };
     $("#sInv", b).onclick = () => { close(); openInvite(); };
+    $("#sAdm", b)?.addEventListener("click", () => { close(); openAdmin(); }); bindLock(b, close);
     $("#sInst", b)?.addEventListener("click", async () => { S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt = null; close(); });
     $$("[data-ub]", b).forEach(x => x.onclick = async () => { await toggleBlock(x.dataset.ub); close(); });
     $("#sOut", b).onclick = async () => { close(); if (await confirmSheet("Sign out?", "You'll need your recovery key to sign back in. Encrypted data on this device will be erased.", "Sign out")) doSignOut(); };
@@ -1094,8 +1125,9 @@ async function deleteAccount(recoveryKey) {
   const bl = await getDocs(query(collection(db, "blocks"), where("blocker", "==", uid))); await Promise.all(bl.docs.map(d => swallow(deleteDoc(d.ref))));
   await swallow(deleteObject(sref(storage, "avatars/" + uid)));
   await swallow(deleteDoc(doc(db, "users", uid, "private", "prefs"))); await swallow(deleteDoc(doc(db, "users", uid, "private", "keys")));
+  await swallow(deleteDoc(doc(db, "admins", uid)));
   await deleteDoc(doc(db, "usernames", S.profile.usernameLower)); await deleteDoc(userRef(uid));
-  stopSession(); await deleteUser(user); await idb.clear();
+  stopSession(); localStorage.removeItem("jc-lock"); await deleteUser(user); await idb.clear();
   try { await terminate(db); await clearIndexedDbPersistence(db); } catch { }
   location.replace(location.pathname);
 }
@@ -1107,6 +1139,309 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("message", e => { if (e.data?.chat && S.uid) location.hash = "#/chat/" + e.data.chat; });
 }
 document.addEventListener("keydown", e => { if (e.key === "Escape") { const l = $("#lightbox"); if (!l.hidden) l.hidden = true; else $$(".sheet-wrap .x").pop()?.click(); } });
+
+/* ============================ v2 FEATURES ============================ */
+const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
+/* ---------- removed account screen + founder admin ---------- */
+function showRemoved() {
+  S.unsubs.forEach(u => u()); S.unsubs = []; S.userUnsubs.forEach(u => u()); S.userUnsubs.clear(); S.msgUnsub?.(); S.reactUnsub?.(); clearInterval(S.hb);
+  S.removed = true; showScreen("gate");
+  $("#gate").innerHTML = `<div class="card glass">${logo(56)}<h2>Your access was removed</h2><p class="muted" style="margin:0">An admin removed your account from JayChat. You can no longer read or send messages.</p><button class="btn ghost" id="rmOut">Sign out</button><button class="btn danger" id="rmDel">Delete my account data</button></div>`;
+  $("#rmOut").onclick = doSignOut; $("#rmDel").onclick = openDelete;
+}
+async function claimFounder() {
+  if (S.profile?.invitedBy !== "admin") return; // only the account created from the hand-made first invite
+  try { const d = await getDoc(doc(db, "admins", S.uid)); if (!d.exists()) await setDoc(doc(db, "admins", S.uid), { promotedBy: "founder", createdAt: serverTimestamp() }); }
+  catch (e) { console.warn("founder", e); }
+}
+
+/* ---------- reactions ---------- */
+function subscribeReactions() {
+  S.reactUnsub?.(); S.reacts = new Map(); const id = S.active;
+  S.reactUnsub = onSnapshot(query(collection(db, "chats", id, "reactions"), limit(1000)), async snap => {
+    const c = S.chats.get(id); if (!c || S.active !== id) return;
+    let key = null; try { key = await chatKey(c); } catch { }
+    const map = new Map();
+    for (const d of snap.docs) {
+      const r = d.data(); if (!r.enc || !key) continue;
+      const ck = "r" + d.id + r.enc.iv; let e = S.decCache.get(ck);
+      if (e === undefined) { try { e = await Crypto.decText(key, r.enc, id); } catch { e = null; } if (e !== null) S.decCache.set(ck, e); }
+      if (!e || e.length > 8) continue;
+      if (!map.has(r.mid)) map.set(r.mid, new Map()); map.get(r.mid).set(r.uid, e);
+    }
+    if (S.active !== id) return; S.reacts = map; renderMessages();
+  }, () => { });
+}
+async function react(m, emoji) {
+  const c = S.chats.get(S.active); if (!c) return; const rid = m.id + "_" + S.uid;
+  try {
+    if (S.reacts.get(m.id)?.get(S.uid) === emoji) await deleteDoc(doc(db, "chats", c.id, "reactions", rid));
+    else await setDoc(doc(db, "chats", c.id, "reactions", rid), { mid: m.id, uid: S.uid, enc: await Crypto.encText(await chatKey(c), emoji, c.id), at: serverTimestamp() });
+  } catch (e) { toast(errMsg(e), true); }
+}
+
+/* ---------- replies ---------- */
+function setReply(m) {
+  const bar = $("#replyBar"); if (!bar) return;
+  if (!m) { S.replyTo = null; bar.hidden = true; bar.innerHTML = ""; return; }
+  S.replyTo = { id: m.id, sender: m.sender, text: (m.type === "image" ? "\uD83D\uDCF7 Photo" : (m.text || "")).slice(0, 100) };
+  bar.hidden = false;
+  bar.innerHTML = `<span class="grow" style="min-width:0"><b class="small">Replying to ${esc(U(m.sender).displayName)}</b><div class="muted small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.replyTo.text)}</div></span><button class="icon-btn" id="rpX" aria-label="Cancel reply">${ic("x")}</button>`;
+  $("#rpX").onclick = () => setReply(null); $("#input")?.focus();
+}
+
+/* ---------- message menu (react / reply / copy / edit / delete) ---------- */
+function msgMenu(m) {
+  const mine = m.sender === S.uid, mineR = S.reacts.get(m.id)?.get(S.uid);
+  sheet("Message", `<div class="emojis">${REACTIONS.map(e => `<button data-e="${e}" class="${mineR === e ? "mine" : ""}" aria-label="React ${e}">${e}</button>`).join("")}</div>
+    <button class="opt" id="mRep">${ic("reply")} Reply</button>
+    ${m.text ? `<button class="opt" id="mCopy">${ic("copy")} Copy text</button>` : ""}
+    ${mine && m.type === "text" ? `<button class="opt" id="mEdit">${ic("edit")} Edit</button>` : ""}
+    ${mine ? `<button class="opt danger" id="mDel">${ic("trash")} Delete for everyone</button>` : ""}`, (b, close) => {
+    $$("[data-e]", b).forEach(x => x.onclick = () => { close(); react(m, x.dataset.e); });
+    $("#mRep", b).onclick = () => { close(); setReply(m); };
+    $("#mCopy", b)?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(m.text); toast("Copied"); } catch { toast("Copy failed", true); } close(); });
+    $("#mEdit", b)?.addEventListener("click", () => { close(); editMessage(m); });
+    $("#mDel", b)?.addEventListener("click", async () => { close(); await deleteMessage(m); });
+  });
+}
+
+/* ---------- edit ---------- */
+function editMessage(m) {
+  sheet("Edit message", `<textarea class="inp" id="ed" rows="4" maxlength="4000"></textarea><button class="btn primary" id="edGo">Save</button>`, (b, close) => {
+    const ta = $("#ed", b); ta.value = m.text || ""; ta.focus();
+    $("#edGo", b).onclick = async () => {
+      const t = ta.value.trim(); if (!t || t === m.text) { close(); return; }
+      const c = S.chats.get(S.active); if (!c) return; $("#edGo", b).disabled = true;
+      try {
+        const e = await Crypto.encText(await chatKey(c), t, c.id), bt = writeBatch(db);
+        bt.update(doc(db, "chats", c.id, "messages", m.id), { enc: e, editedAt: serverTimestamp() });
+        if (c.lastMessage && c.lastMessage.from === S.uid && Math.abs(ms(c.lastMessage.at) - (ms(m.createdAt) || 0)) <= 1) bt.update(chatRef(c.id), { lastMessage: { from: S.uid, type: "text", enc: e, at: c.lastMessage.at } });
+        await bt.commit(); close(); toast("Message edited");
+      } catch (er) { toast(errMsg(er), true); $("#edGo", b).disabled = false; }
+    };
+  });
+}
+
+/* ---------- search inside a chat (only messages loaded on this device) ---------- */
+function bodyHtml(t) {
+  if (!S.search) return linkify(esc(t));
+  const re = new RegExp("(" + S.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+  return t.split(re).map((p, i) => i % 2 ? `<mark>${esc(p)}</mark>` : esc(p)).join("");
+}
+function toggleSearch() {
+  const sb = $("#searchBar"); if (!sb.hidden) return closeSearch();
+  sb.hidden = false; $("#sq").value = ""; S.search = ""; $("#sCount").textContent = ""; $("#sq").focus();
+}
+function closeSearch() {
+  const sb = $("#searchBar"); if (!sb || sb.hidden) return; sb.hidden = true; S.search = ""; $("#sCount").textContent = ""; if (S.active) renderMessages();
+}
+
+/* ---------- add people to a group ---------- */
+function openAddPeople(c) {
+  let results = [], picked = new Map(), timer;
+  sheet("Add people", `<p class="muted small">New members can read this group's earlier messages too.</p><div class="chips" id="chips"></div><input class="inp" id="q" autocomplete="off" autocapitalize="none" placeholder="Search by username"><div id="res"></div><button class="btn primary" id="go" disabled>Add to group</button>`, (b, close) => {
+    const draw = () => {
+      $("#res", b).innerHTML = results.length ? results.map(u => `<button class="opt" data-u="${esc(u.uid)}">${avatar(u, 40)}<span class="grow"><b>${esc(u.displayName)}</b><div class="muted small">@${esc(u.username)}</div></span>${picked.has(u.uid) ? ic("check") : ""}</button>`).join("") : '<p class="muted small">No one to add. Usernames are matched by prefix.</p>';
+      $("#chips", b).innerHTML = [...picked.values()].map(u => `<span class="chip">${esc(u.displayName)}<button data-r="${esc(u.uid)}" aria-label="Remove">${ic("x")}</button></span>`).join("");
+      $("#go", b).disabled = !picked.size;
+    };
+    const run = async () => { try { results = (await searchUsers($("#q", b).value)).filter(u => !c.participants.includes(u.uid)); } catch (e) { results = []; toast(errMsg(e), true); } draw(); };
+    $("#q", b).oninput = () => { clearTimeout(timer); timer = setTimeout(run, 250); };
+    b.onclick = e => {
+      const r = e.target.closest("[data-r]"); if (r) { picked.delete(r.dataset.r); draw(); return; }
+      const o = e.target.closest("[data-u]"); if (!o) return; const u = results.find(x => x.uid === o.dataset.u);
+      if (picked.has(u.uid)) picked.delete(u.uid); else if (c.participants.length + picked.size < 12) picked.set(u.uid, u); else toast("Groups are limited to 12 people.", true); draw();
+    };
+    $("#go", b).onclick = async () => { $("#go", b).disabled = true; try { await addToGroup(c, [...picked.values()]); toast("Added to the group"); close(); } catch (e) { toast(errMsg(e), true); $("#go", b).disabled = false; } };
+    run();
+  });
+}
+async function addToGroup(c, users) {
+  const e = c.keys?.[S.uid]; if (!e) throw new Error("You don't have this group's key.");
+  const raw = await Crypto.decBytes(await Crypto.shared(S.priv, c.pubs[e.by], "group:" + c.id), e, c.id);
+  const patch = { participants: [...c.participants, ...users.map(u => u.uid)] };
+  for (const u of users) {
+    const kek = await Crypto.shared(S.priv, u.pub, "group:" + c.id);
+    patch[`keys.${u.uid}`] = { by: S.uid, ...(await Crypto.encBytes(kek, raw, c.id)) }; patch[`pubs.${u.uid}`] = u.pub;
+  }
+  await updateDoc(chatRef(c.id), patch);
+}
+
+/* ---------- invites: single-use and multi-use ---------- */
+function openInvite() {
+  sheet("Invite people", `<div class="seg" id="invSeg"><button data-t="single" class="on">One person</button><button data-t="multi">Many people</button></div>
+    <p class="muted small" id="invHelp">A single-use code works once and then stops working.</p>
+    <div class="field" id="multiOpts" hidden><label for="mx">How many people can use this code?</label><select class="inp" id="mx"><option>5</option><option selected>10</option><option>25</option><option>50</option></select></div>
+    <div id="inv"></div><button class="btn primary" id="gen">${ic("userPlus")} Generate invite code</button><div class="sec">Your codes</div><div id="mine"><div class="spinner"></div></div>`, (b) => {
+    let type = "single";
+    const link = c => `${location.origin}${location.pathname}#invite=${c}`;
+    $$("#invSeg button", b).forEach(x => x.onclick = () => {
+      type = x.dataset.t; $$("#invSeg button", b).forEach(y => y.classList.toggle("on", y === x)); $("#multiOpts", b).hidden = type !== "multi";
+      $("#invHelp", b).textContent = type === "multi" ? "A group code can be used by several people, up to the limit you choose. Anyone who has it can join, so share it carefully and revoke it when you're done." : "A single-use code works once and then stops working.";
+    });
+    const loadMine = async () => {
+      try {
+        const s = await getDocs(query(collection(db, "invites"), where("createdBy", "==", S.uid)));
+        const rows = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, c) => ms(c.createdAt) - ms(a.createdAt));
+        const joiners = new Map();
+        await Promise.all(rows.filter(r => r.multi).map(async r => { try { joiners.set(r.id, (await getDocs(query(collection(db, "users"), where("inviteCode", "==", r.id), limit(50)))).docs.map(d => d.data().displayName)); } catch { } }));
+        rows.filter(r => !r.multi && r.used).forEach(r => watchUser(r.usedBy));
+        $("#mine", b).innerHTML = rows.length ? rows.map(r => {
+          const sub = r.multi ? `Group code: ${r.uses || 0} of ${r.maxUses} used${joiners.get(r.id)?.length ? " (" + esc(joiners.get(r.id).join(", ")) + ")" : ""}` : (r.used ? "Used by " + esc(U(r.usedBy).displayName === "…" ? "a friend" : U(r.usedBy).displayName) : "Not used yet");
+          const open = r.multi ? (r.uses || 0) < r.maxUses : !r.used;
+          return `<div class="opt"><span class="grow"><b style="font-family:ui-monospace,monospace">${esc(r.id)}</b><div class="muted small">${sub}</div></span>${open ? `<button class="btn ghost sm" data-del="${esc(r.id)}">Revoke</button>` : ""}</div>`;
+        }).join("") : '<p class="muted small">No codes yet.</p>';
+      } catch (e) { $("#mine", b).textContent = errMsg(e); }
+    };
+    $("#gen", b).onclick = async () => {
+      const code = genCode(); $("#gen", b).disabled = true;
+      const base = { createdBy: S.uid, createdByName: S.profile.displayName, createdByUsername: S.profile.username, pub: S.profile.pub, createdAt: serverTimestamp() };
+      const data = type === "multi" ? { ...base, multi: true, maxUses: +$("#mx", b).value, uses: 0 } : { ...base, used: false, usedBy: null };
+      try {
+        await setDoc(doc(db, "invites", code), data);
+        $("#inv", b).innerHTML = `<div class="code">${code}</div><div class="row" style="margin-top:10px"><button class="btn ghost sm grow" id="cc">${ic("copy")} Copy code</button><button class="btn primary sm grow" id="sh">${ic("share")} Share link</button></div>`;
+        $("#cc", b).onclick = async () => { try { await navigator.clipboard.writeText(code); toast("Code copied"); } catch { toast("Copy failed", true); } };
+        $("#sh", b).onclick = async () => { const text = `Join me on JayChat. Invite code: ${code}`; try { navigator.share ? await navigator.share({ title: "JayChat invite", text, url: link(code) }) : (await navigator.clipboard.writeText(text + "\n" + link(code)), toast("Invite link copied")); } catch { } };
+        loadMine();
+      } catch (e) { toast(errMsg(e), true); }
+      $("#gen", b).disabled = false;
+    };
+    b.addEventListener("click", async e => { const d = e.target.closest("[data-del]"); if (!d) return; try { await deleteDoc(doc(db, "invites", d.dataset.del)); loadMine(); } catch (er) { toast(errMsg(er), true); } });
+    loadMine();
+  });
+}
+
+/* ---------- admin tools: invite tree, promote, remove ---------- */
+function openAdmin() { sheet("Admin tools", '<div class="spinner" style="align-self:center"></div>', b => loadAdmin(b)); }
+async function loadAdmin(b) {
+  try {
+    const snap = await getDocs(collection(db, "users")), users = new Map(snap.docs.map(d => [d.id, { uid: d.id, ...d.data() }]));
+    const kids = new Map(); users.forEach(u => { const p = users.has(u.invitedBy) ? u.invitedBy : "root"; if (!kids.has(p)) kids.set(p, []); kids.get(p).push(u.uid); });
+    const byTime = (x, y) => ms(users.get(x).createdAt) - ms(users.get(y).createdAt);
+    const rows = [], seen = new Set();
+    const walk = (uid, d) => { if (seen.has(uid)) return; seen.add(uid); rows.push({ u: users.get(uid), d }); (kids.get(uid) || []).sort(byTime).forEach(k => walk(k, d + 1)); };
+    (kids.get("root") || []).sort(byTime).forEach(k => walk(k, 0));
+    const desc = uid => { const out = []; const go = x => (kids.get(x) || []).forEach(k => { out.push(k); go(k); }); go(uid); return out; };
+    b.innerHTML = `<p class="muted small">${users.size} members. An indented row was invited by the person above it.</p>` + rows.map(({ u, d }) => {
+      const tags = (u.invitedBy === "admin" ? '<span class="tag">Founder</span>' : "") + (S.admins.has(u.uid) ? '<span class="tag">Admin</span>' : "") + (S.bans.has(u.uid) ? '<span class="tag bad">Removed</span>' : "") + (u.uid === S.uid ? '<span class="tag">You</span>' : "");
+      return `<div class="tree" style="margin-left:${Math.min(d, 6) * 14}px">${avatar(u, 34)}<span class="grow"><b>${esc(u.displayName)}</b> <span class="muted small">@${esc(u.username)}</span>${tags}</span>${u.uid === S.uid ? "" : `<button class="btn ghost sm" data-m="${esc(u.uid)}">Manage</button>`}</div>`;
+    }).join("");
+    b.onclick = e => { const m = e.target.closest("[data-m]"); if (m) manageUser(users.get(m.dataset.m), desc(m.dataset.m), b); };
+  } catch (e) { b.textContent = errMsg(e); }
+}
+async function banMany(ids) {
+  for (let i = 0; i < ids.length; i += 400) { const bt = writeBatch(db); ids.slice(i, i + 400).forEach(id => bt.set(doc(db, "bans", id), { by: S.uid, createdAt: serverTimestamp() })); await bt.commit(); }
+}
+function manageUser(u, descIds, listEl) {
+  const isAdm = S.admins.has(u.uid), founder = u.invitedBy === "admin", gone = S.bans.has(u.uid);
+  const chain = descIds.filter(x => !S.admins.has(x) && !S.bans.has(x));
+  sheet(u.displayName, `<p class="muted small">@${esc(u.username)}</p>
+    ${isAdm ? (founder ? '<p class="muted small">Founder admin. This can\'t be changed.</p>' : `<button class="opt" id="aDem">Remove admin rights</button>`) : (gone ? "" : `<button class="opt" id="aPro">${ic("shield")} Make admin</button>`)}
+    ${gone ? `<button class="opt" id="aRes">Restore access</button>` : (isAdm ? '<p class="muted small">Remove their admin rights first if you want to remove them from JayChat.</p>' : `<button class="opt danger" id="aBan">${ic("ban")} Remove from JayChat</button>`)}
+    ${!gone && !isAdm && chain.length ? `<button class="opt danger" id="aChain">${ic("ban")} Remove them and everyone they invited (${chain.length + 1})</button>` : ""}
+    ${!gone && !isAdm && descIds.length > chain.length ? '<p class="muted small">Admins and people already removed in their invite chain are skipped.</p>' : ""}`, (b, close) => {
+    const run = async (fn, msg) => { close(); try { await fn(); toast(msg); } catch (e) { toast(errMsg(e), true); } setTimeout(() => loadAdmin(listEl), 600); };
+    $("#aPro", b)?.addEventListener("click", () => run(() => setDoc(doc(db, "admins", u.uid), { promotedBy: S.uid, createdAt: serverTimestamp() }), `${u.displayName} is now an admin`));
+    $("#aDem", b)?.addEventListener("click", () => run(() => deleteDoc(doc(db, "admins", u.uid)), "Admin rights removed"));
+    $("#aRes", b)?.addEventListener("click", () => run(() => deleteDoc(doc(db, "bans", u.uid)), "Access restored"));
+    $("#aBan", b)?.addEventListener("click", async () => { close(); if (await confirmSheet(`Remove ${u.displayName}?`, "They will no longer be able to read or send messages, and their messages disappear for everyone. You can restore them later.", "Remove")) run(() => banMany([u.uid]), "Removed"); });
+    $("#aChain", b)?.addEventListener("click", async () => { close(); if (await confirmSheet("Remove the whole chain?", `This removes ${u.displayName} and ${chain.length} ${chain.length === 1 ? "person" : "people"} they invited (directly or indirectly). You can restore people one by one later.`, "Remove them all")) run(() => banMany([u.uid, ...chain]), "Removed"); });
+  });
+}
+
+/* ============================ APP LOCK ============================ */
+const LOCK_KEY = "jc-lock";
+const lockCfg = () => { try { return JSON.parse(localStorage.getItem(LOCK_KEY)); } catch { return null; } };
+const saveLock = c => localStorage.setItem(LOCK_KEY, JSON.stringify(c));
+async function pinHash(pin, salt) {
+  const base = await crypto.subtle.importKey("raw", enc.encode("jaychat-pin:" + pin), "PBKDF2", false, ["deriveBits"]);
+  return b64(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 150000 }, base, 256));
+}
+async function verifyPin(pin) { const c = lockCfg(); return !!c && (await pinHash(pin, unb64(c.salt))) === c.hash; }
+async function bioRegister() {
+  const cred = await navigator.credentials.create({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rp: { name: "JayChat" }, user: { id: crypto.getRandomValues(new Uint8Array(16)), name: S.profile?.username || "user", displayName: S.profile?.displayName || "User" }, pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
+  return b64(cred.rawId);
+}
+async function bioCheck(rawId) {
+  await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), allowCredentials: [{ type: "public-key", id: unb64(rawId) }], userVerification: "required", timeout: 60000 } });
+}
+function pinSheet(title, again) {
+  return new Promise(res => {
+    let done = false;
+    const s = sheet(title, `<input class="inp mono" id="p1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="4 to 6 digits">${again ? '<input class="inp mono" id="p2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="Repeat PIN">' : ""}<div class="err" id="pe"></div><button class="btn primary" id="pg">Continue</button>`, (b, close) => {
+      $("#pg", b).onclick = () => {
+        const a = $("#p1", b).value; if (!/^\d{4,6}$/.test(a)) { $("#pe", b).textContent = "Use 4 to 6 digits."; return; }
+        if (again && a !== $("#p2", b).value) { $("#pe", b).textContent = "The two PINs don't match."; return; }
+        done = true; close(); res(a);
+      };
+    });
+    new MutationObserver((_, o) => { if (!document.body.contains(s.el)) { o.disconnect(); if (!done) res(null); } }).observe($("#sheets"), { childList: true });
+  });
+}
+async function setPin() {
+  const pin = await pinSheet("Choose a PIN", true); if (!pin) return false;
+  const salt = crypto.getRandomValues(new Uint8Array(16)), old = lockCfg();
+  saveLock({ salt: b64(salt), hash: await pinHash(pin, salt), len: pin.length, delay: old?.delay ?? 60, bio: old?.bio || null }); return true;
+}
+let lockPromise = null, lockFails = 0, lockUntil = 0;
+const requireUnlock = () => lockCfg() ? showLock() : Promise.resolve();
+function showLock() {
+  if (lockPromise) return lockPromise;
+  const cfg = lockCfg(); if (!cfg) return Promise.resolve();
+  $("#sheets").innerHTML = ""; $("#lightbox").hidden = true;
+  const el = $("#lock"); el.hidden = false; let pin = "", busy = false;
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, "bio", 0, "del"];
+  el.innerHTML = `<div class="lockbox">${logo(64)}<h2 style="margin:0">JayChat is locked</h2><div class="dots" id="ldots"></div><div class="err" id="lerr"></div><div class="pad">${keys.map(k => `<button class="key" data-k="${k}" ${k === "bio" && !cfg.bio ? 'disabled style="visibility:hidden"' : ""} aria-label="${k === "del" ? "Delete" : k === "bio" ? "Use biometrics" : k}">${k === "del" ? "\u232B" : k === "bio" ? ic("shield") : k}</button>`).join("")}</div><button class="link" id="lforgot">Forgot PIN?</button></div>`;
+  const dots = () => { $("#ldots").innerHTML = Array.from({ length: cfg.len }, (_, i) => `<i class="${i < pin.length ? "f" : ""}"></i>`).join(""); }; dots();
+  lockPromise = new Promise(resolve => {
+    const done = () => { el.hidden = true; el.innerHTML = ""; lockPromise = null; lockFails = 0; resolve(); };
+    const tryBio = async () => { if (!cfg.bio) return; try { await bioCheck(cfg.bio); done(); } catch { } };
+    el.onclick = async e => {
+      if (e.target.closest("#lforgot")) { if (confirm("Forgot your PIN?\n\nThe only way in is to sign out of this device (this erases its local data) and sign back in with your recovery key. Sign out now?")) doSignOut(); return; }
+      const k = e.target.closest("[data-k]")?.dataset.k; if (k === undefined || busy) return;
+      if (k === "bio") return tryBio();
+      if (k === "del") { pin = pin.slice(0, -1); dots(); return; }
+      if (Date.now() < lockUntil) { $("#lerr").textContent = `Too many tries. Wait ${Math.ceil((lockUntil - Date.now()) / 1000)}s.`; return; }
+      $("#lerr").textContent = ""; if (pin.length >= cfg.len) return; pin += k; dots();
+      if (pin.length === cfg.len) {
+        busy = true; const ok = await verifyPin(pin); busy = false;
+        if (ok) return done();
+        lockFails++; pin = ""; dots(); $("#lerr").textContent = "Wrong PIN.";
+        $(".lockbox")?.animate([{ transform: "translateX(-8px)" }, { transform: "translateX(8px)" }, { transform: "none" }], { duration: 220 });
+        if (lockFails >= 5) lockUntil = Date.now() + 30000 * (lockFails - 4);
+      }
+    };
+    tryBio();
+  });
+  return lockPromise;
+}
+document.addEventListener("visibilitychange", () => {
+  const cfg = lockCfg(); if (!cfg || !S.uid) return;
+  if (document.visibilityState === "hidden") { S.hiddenAt = Date.now(); if (cfg.delay === 0) showLock(); }
+  else if (S.hiddenAt && Date.now() - S.hiddenAt >= cfg.delay * 1000) showLock();
+});
+function lockRows() {
+  const cfg = lockCfg();
+  if (!cfg) return `<button class="opt" id="lkOn">${ic("lock")} Turn on app lock</button>`;
+  return `<div class="opt"><span class="grow">Auto-lock</span><select class="inp" id="lkDelay">${[[0, "Immediately"], [60, "After 1 minute"], [300, "After 5 minutes"]].map(([v, l]) => `<option value="${v}" ${v === cfg.delay ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+    ${window.PublicKeyCredential ? `<div class="opt"><span class="grow">Use fingerprint / face<div class="muted small">Your PIN always stays as a backup</div></span><button class="switch ${cfg.bio ? "on" : ""}" id="lkBio" role="switch" aria-checked="${!!cfg.bio}" aria-label="Biometric unlock"></button></div>` : ""}
+    <button class="opt" id="lkChg">${ic("lock")} Change PIN</button><button class="opt danger" id="lkOff">${ic("x")} Turn off app lock</button>`;
+}
+function bindLock(b, close) {
+  const reopen = () => setTimeout(openSettings, 250);
+  $("#lkOn", b)?.addEventListener("click", async () => { close(); if (await setPin()) toast("App lock is on"); reopen(); });
+  $("#lkChg", b)?.addEventListener("click", async () => { close(); const cur = await pinSheet("Enter your current PIN"); if (cur === null) return; if (!(await verifyPin(cur))) { toast("Wrong PIN", true); return; } if (await setPin()) toast("PIN changed"); reopen(); });
+  $("#lkOff", b)?.addEventListener("click", async () => { close(); const cur = await pinSheet("Enter your PIN to turn off"); if (cur === null) return; if (!(await verifyPin(cur))) { toast("Wrong PIN", true); return; } localStorage.removeItem(LOCK_KEY); toast("App lock is off"); reopen(); });
+  $("#lkDelay", b)?.addEventListener("change", e => { const c = lockCfg(); c.delay = +e.target.value; saveLock(c); });
+  $("#lkBio", b)?.addEventListener("click", async e => {
+    const c = lockCfg(), el = e.currentTarget;
+    if (c.bio) { c.bio = null; el.classList.remove("on"); }
+    else { try { c.bio = await bioRegister(); el.classList.add("on"); } catch { toast("This device couldn't set up fingerprint/face unlock.", true); return; } }
+    saveLock(c);
+  });
+}
 </script>
 </body>
 </html>
