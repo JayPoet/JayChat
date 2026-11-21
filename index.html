@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JayChat</title>
+<meta name="description" content="A private, invite-only, end-to-end encrypted chat for friends.">
+<meta name="theme-color" content="#0b0d1a" id="metaTheme">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JayChat">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script>
+/* Apply saved theme before first paint (no flash). */
+(function(){var t=localStorage.getItem('jc-theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+document.documentElement.dataset.theme=t;var m=document.getElementById('metaTheme');if(m)m.content=t==='dark'?'#0b0d1a':'#eef2ff';})();
+</script>
+<style>
+:root{
+  --bg1:#eaf0ff;--bg2:#f6edff;--ink:#12163a;--ink2:#555c85;--ink3:#8990b3;
+  --glass:rgba(255,255,255,.58);--glass2:rgba(255,255,255,.9);--stroke:rgba(255,255,255,.75);--line:rgba(18,22,58,.09);
+  --shadow:0 12px 40px rgba(47,70,160,.16);--in:rgba(255,255,255,.82);
+  --a1:#2f5bff;--a2:#8a5cff;--a3:#5ee0ff;--grad:linear-gradient(135deg,var(--a1),var(--a2));
+  --danger:#e5365a;--ok:#16a34a;--r:22px;
+  --font:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable",system-ui,-apple-system,Roboto,sans-serif;
+}
+[data-theme=dark]{
+  --bg1:#080a18;--bg2:#120c26;--ink:#eef1ff;--ink2:#a2a9d0;--ink3:#6f77a3;
+  --glass:rgba(26,30,62,.55);--glass2:rgba(30,35,72,.92);--stroke:rgba(255,255,255,.09);--line:rgba(255,255,255,.08);
+  --shadow:0 14px 44px rgba(0,0,0,.5);--in:rgba(255,255,255,.07);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2));color:var(--ink);font:400 15px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:var(--a1)}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.5;animation:drift 26s ease-in-out infinite alternate}
+.bg i:nth-child(1){background:var(--a1);left:-20vmax;top:-22vmax;opacity:.38}
+.bg i:nth-child(2){background:var(--a2);right:-24vmax;top:20vh;animation-delay:-9s;opacity:.32}
+.bg i:nth-child(3){background:var(--a3);left:5vmax;bottom:-34vmax;animation-delay:-16s;opacity:.22}
+[data-theme=light] .bg i{opacity:.28}
+@keyframes drift{to{transform:translate(6vmax,4vmax) scale(1.12)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.glass{background:var(--glass);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);border:1px solid var(--stroke);box-shadow:var(--shadow)}
+.screen{position:fixed;inset:0;z-index:1;overflow:auto;padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom))}
+.center{display:grid;place-items:center}
+.card{width:min(100%,420px);border-radius:30px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;animation:rise .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.card h1{font-size:30px;line-height:1.1;margin:6px 0 0;letter-spacing:-.02em}
+.card h2{font-size:22px;margin:0;letter-spacing:-.01em}
+.muted{color:var(--ink2)}.small{font-size:13px}.tiny{font-size:12px;color:var(--ink3)}
+.logo{width:76px;height:76px;border-radius:22px;box-shadow:0 10px 30px rgba(79,91,255,.45)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border-radius:16px;font-weight:650;transition:transform .12s,filter .2s,opacity .2s;min-height:50px;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--grad);color:#fff;box-shadow:0 8px 24px rgba(79,91,255,.4)}
+.btn.ghost{background:var(--glass);border:1px solid var(--stroke)}
+.btn.danger{background:rgba(229,54,90,.14);color:var(--danger);border:1px solid rgba(229,54,90,.3)}
+.btn.locked{background:transparent;border:1px dashed var(--line);color:var(--ink2);flex-direction:column;gap:0}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.btn.sm{min-height:38px;padding:8px 14px;border-radius:12px;font-size:14px}
+.link{color:var(--a1);font-weight:600;padding:6px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600;color:var(--ink2)}
+.inp{width:100%;padding:14px 15px;border-radius:14px;border:1px solid var(--line);background:var(--glass);outline:0;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--a1);box-shadow:0 0 0 4px rgba(47,91,255,.18)}
+.inp.mono{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em}
+.hint{font-size:12.5px;min-height:16px;color:var(--ink3)}.hint.bad{color:var(--danger)}.hint.good{color:var(--ok)}
+.err{color:var(--danger);font-size:13.5px;min-height:18px}
+.row{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+.icon-btn{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;flex:none;transition:background .15s}
+.icon-btn:hover{background:var(--glass)}
+.icon-btn svg,.ic{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.av{--s:44px;width:var(--s);height:var(--s);flex:none;border-radius:calc(var(--s)*.34);position:relative;display:grid;place-items:center;font-weight:700;font-size:calc(var(--s)*.4);color:#fff;background:linear-gradient(135deg,hsl(var(--h) 80% 58%),hsl(calc(var(--h) + 50) 78% 48%))}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.av .dot{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid var(--bg1)}
+.spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--a1);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.offline{position:fixed;top:0;left:0;right:0;z-index:90;text-align:center;padding:calc(6px + env(safe-area-inset-top)) 12px 6px;background:var(--danger);color:#fff;font-size:13px;font-weight:600}
+/* App layout */
+#app{position:fixed;inset:0;z-index:1;display:grid}
+#sidebar,#main{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s}
+#main{transform:translateX(100%)}
+#app.in-chat #main{transform:none}
+#app.in-chat #sidebar{transform:translateX(-14%);opacity:0;pointer-events:none}
+.bar{display:flex;align-items:center;gap:10px;padding:max(12px,env(safe-area-inset-top)) 12px 10px}
+.bar h1{font-size:22px;margin:0;letter-spacing:-.02em}
+.search{margin:0 12px 8px;position:relative}
+.search .inp{padding-left:42px;border-radius:16px}
+.search .ic{position:absolute;left:13px;top:50%;margin-top:-10.5px;color:var(--ink3)}
+#list{flex:1;overflow:auto;padding:4px 8px calc(16px + env(safe-area-inset-bottom))}
+.item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:20px;text-align:left;transition:background .15s}
+.item:hover,.item.on{background:var(--glass)}
+.item .t{display:flex;justify-content:space-between;gap:8px;font-weight:650}
+.item .p{display:flex;gap:6px;color:var(--ink2);font-size:14px}
+.item .p span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item time{font-size:12px;color:var(--ink3);font-weight:500;flex:none}
+.badge{width:10px;height:10px;border-radius:50%;background:var(--grad);flex:none;align-self:center}
+.skel{height:64px;margin:6px 4px;border-radius:20px;background:linear-gradient(90deg,var(--glass) 25%,var(--in) 50%,var(--glass) 75%);background-size:200% 100%;animation:sh 1.3s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:48px 28px;color:var(--ink2)}
+.empty .logo{width:64px;height:64px;border-radius:19px;opacity:.9}
+.empty h3{margin:6px 0 0;color:var(--ink);font-size:18px}
+#chatEmpty{display:none}
+#chatView{display:flex;flex-direction:column;flex:1;min-height:0}
+.chead{display:flex;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) 10px 10px;margin:0;border-radius:0 0 24px 24px}
+.chead .nm{font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chead .st{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#msgs{flex:1;overflow:auto;padding:14px 12px 8px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain}
+.day{align-self:center;margin:12px 0 6px;padding:4px 12px;border-radius:99px;font-size:12px;color:var(--ink2);background:var(--glass);border:1px solid var(--stroke)}
+.msg{display:flex;max-width:100%}.msg.out{justify-content:flex-end}.msg.in{justify-content:flex-start}
+.bubble{max-width:min(78%,520px);padding:8px 12px 6px;border-radius:20px;position:relative;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap;animation:pop .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(6px)}}
+.msg.out .bubble{background:var(--grad);color:#fff;border-bottom-right-radius:7px;box-shadow:0 6px 18px rgba(79,91,255,.28)}
+.msg.in .bubble{background:var(--in);border:1px solid var(--stroke);border-bottom-left-radius:7px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.msg.out .bubble a{color:#fff}
+.bubble .who{font-size:12px;font-weight:700;color:var(--a1);margin-bottom:2px}
+.bubble .meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;opacity:.72;margin-top:2px;white-space:normal}
+.bubble .meta .ic{width:14px;height:14px;stroke-width:2.4}
+.bubble .meta .seen{color:var(--a3);opacity:1}
+.msg.out .meta .seen{color:#c9f4ff}
+.bubble.bad{opacity:.7;font-style:italic}
+.pic-wrap{position:relative;width:min(260px,64vw);aspect-ratio:var(--ar,1.3);border-radius:14px;overflow:hidden;background:var(--in);margin:2px 0 4px;cursor:zoom-in}
+.pic-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+.pic-wrap.ready img{opacity:1}
+.pic-wrap .spinner{position:absolute;left:50%;top:50%;margin:-13px}
+.pic-wrap.ready .spinner,.pic-wrap.err .spinner{display:none}
+.pic-wrap.err::after{content:"Photo unavailable";position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:var(--ink2)}
+.more{align-self:center;margin:4px 0 8px}
+.typing{height:22px;padding:0 20px;font-size:12.5px;color:var(--ink2)}
+.composer{display:flex;align-items:flex-end;gap:8px;margin:0 10px calc(10px + env(safe-area-inset-bottom));padding:7px;border-radius:26px}
+.composer textarea{flex:1;resize:none;border:0;background:transparent;outline:0;max-height:140px;padding:9px 6px;line-height:1.35}
+.send{width:42px;height:42px;border-radius:15px;background:var(--grad);color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 6px 16px rgba(79,91,255,.4);transition:transform .12s,opacity .2s}
+.send:active{transform:scale(.92)}.send[disabled]{opacity:.4}
+.banner{margin:0 10px calc(10px + env(safe-area-inset-bottom));padding:14px;border-radius:20px;text-align:center;color:var(--ink2);font-size:14px}
+@media(min-width:880px){
+  #app{grid-template-columns:380px 1fr}
+  #sidebar,#main{position:relative;transform:none!important;opacity:1!important;pointer-events:auto!important}
+  #sidebar{border-right:1px solid var(--line)}
+  .back{display:none!important}
+  #app:not(.in-chat) #chatView{display:none}
+  #app:not(.in-chat) #chatEmpty{display:flex;flex:1;justify-content:center}
+}
+/* Sheets */
+.sheet-wrap{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:absolute;inset:0;background:rgba(5,7,20,.5);animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet{position:relative;width:min(100%,520px);max-height:88dvh;border-radius:30px 30px 0 0;display:flex;flex-direction:column;background:var(--glass2);animation:up .3s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom)}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet-wrap.out .sheet{transform:translateY(40px);opacity:0;transition:.18s}.sheet-wrap.out .scrim{opacity:0;transition:.18s}
+.sheet header{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 6px 22px}
+.sheet h3{margin:0;font-size:19px}
+.sheet-body{overflow:auto;padding:6px 18px 20px;display:flex;flex-direction:column;gap:12px}
+@media(min-width:700px){.sheet-wrap{align-items:center}.sheet{border-radius:30px}}
+.sec{font-size:12.5px;font-weight:700;color:var(--ink3);margin:8px 0 -4px}
+.opt{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.opt:last-child{border-bottom:0}
+.opt.danger{color:var(--danger)}
+.switch{position:relative;width:48px;height:28px;flex:none;border-radius:99px;background:var(--line);transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:transform .2s}
+.switch.on{background:var(--grad)}.switch.on::after{transform:translateX(20px)}
+select.inp{appearance:none;width:auto;padding:9px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:5px 10px;border-radius:99px;background:var(--glass);border:1px solid var(--stroke);font-size:13px;display:flex;gap:6px;align-items:center}
+.code{font:700 22px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-align:center;padding:16px;border-radius:18px;background:var(--in);border:1px dashed var(--a1);user-select:all;word-break:break-all}
+.seg{display:flex;padding:4px;border-radius:14px;background:var(--in)}
+.seg button{flex:1;padding:8px;border-radius:11px;font-weight:600;color:var(--ink2)}.seg button.on{background:var(--glass2);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#toasts{position:fixed;left:0;right:0;bottom:calc(88px + env(safe-area-inset-bottom));z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{pointer-events:auto;max-width:min(90vw,420px);padding:11px 16px;border-radius:16px;background:var(--glass2);border:1px solid var(--stroke);box-shadow:var(--shadow);backdrop-filter:blur(20px);font-weight:550;animation:rise .25s}
+.toast.bad{background:var(--danger);color:#fff}
+#lightbox{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.92);display:grid;place-items:center;padding:16px}
+#lightbox img{max-width:100%;max-height:100%;border-radius:12px}
+#lightbox button{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;color:#fff}
+.keybox{font:700 19px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-align:center;padding:18px 10px;border-radius:18px;background:var(--in);border:1px solid var(--a1);user-select:all}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}.check input{margin-top:3px;width:18px;height:18px;accent-color:var(--a1)}
+.pick{display:flex;align-items:center;gap:14px}
+</style>
+</head>
+<body>
+<div class="bg"><i></i><i></i><i></i></div>
+<div id="offline" class="offline" hidden>You're offline. Messages will send when you reconnect.</div>
+
+<main id="splash" class="screen center"><div class="spinner"></div></main>
+<main id="gate" class="screen center" hidden></main>
+
+<div id="app" hidden>
+  <aside id="sidebar">
+    <div class="bar">
+      <button class="icon-btn" id="btnMe" aria-label="Settings"></button>
+      <h1 class="grow">JayChat</h1>
+      <button class="icon-btn" id="btnTheme" aria-label="Toggle dark mode"></button>
+      <button class="icon-btn" id="btnNew" aria-label="New chat"></button>
+    </div>
+    <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input class="inp" id="filter" placeholder="Search chats" autocomplete="off"></div>
+    <div id="list"></div>
+  </aside>
+  <section id="main">
+    <div id="chatEmpty" class="empty"><svg class="logo" viewBox="0 0 512 512"><use href="#logo"/></svg><h3>Pick a conversation</h3><span>Messages are end-to-end encrypted.</span></div>
+    <div id="chatView" hidden>
+      <header class="chead glass">
+        <button class="icon-btn back" id="btnBack" aria-label="Back"></button>
+        <button class="row grow" id="btnInfo" style="min-width:0;text-align:left"><span id="hAv"></span><span class="grow"><div class="nm" id="hName"></div><div class="st" id="hStatus"></div></span></button>
+        <button class="icon-btn" id="btnInfo2" aria-label="Chat info"></button>
+      </header>
+      <div id="msgs" aria-live="polite"></div>
+      <div class="typing" id="typing"></div>
+      <div id="composerWrap"></div>
+    </div>
+  </section>
+</div>
+
+<div id="sheets"></div><div id="toasts"></div><div id="lightbox" hidden></div>
+<input type="file" id="filePick" accept="image/*" hidden>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f5bff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient>
+  <symbol id="logo" viewBox="0 0 512 512"><rect width="512" height="512" rx="116" fill="url(#lg)"/><path d="M256 104c-80.6 0-146 53.2-146 118.8 0 36.9 20.7 69.8 53.1 91.6-2.9 22.3-12.7 42-27.3 56.9 29.3-1.2 56.4-11.4 77.5-27.5 13.6 2.8 27.9 4.4 42.7 4.4 80.6 0 146-53.2 146-125.4S336.6 104 256 104z" fill="#fff"/><path d="M250 168h68M286 168v84c0 24-15 38-40 38-13 0-23-4-31-12" fill="none" stroke="url(#lg)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, Timestamp, getDocs, deleteField, arrayUnion, terminate, clearIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getStorage, ref as sref, uploadBytes, getBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+/* ============================ CONFIG ============================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBZJvVpAY9DR1ep_g3QPkpK4Un99k8TYi8",
+  authDomain: "app-chat-secret.firebaseapp.com",
+  projectId: "app-chat-secret",
+  storageBucket: "app-chat-secret.firebasestorage.app",
+  messagingSenderId: "463731801036",
+  appId: "1:463731801036:web:c3c5cd4b94d335fd543b69"
+};
+const VAPID_KEY = "";                 // optional: Web Push key pair (see SETUP.md) for background push
+const EMAIL_DOMAIN = "jaychat.invalid"; // usernames map to synthetic, never-mailed addresses
+const TTL_OPTIONS = [[0, "Off"], [3600, "1 hour"], [86400, "24 hours"], [604800, "7 days"]];
+const PAGE = 40;
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+let db;
+try { db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+catch (e) { db = getFirestore(fbApp); }
+const storage = getStorage(fbApp);
+
+/* ============================ HELPERS ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const linkify = s => s.replace(/\bhttps?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+const enc = new TextEncoder(), dec = new TextDecoder();
+const b64 = buf => { const u = new Uint8Array(buf); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const ms = t => t && t.toMillis ? t.toMillis() : (typeof t === "number" ? t : 0);
+const sleep = t => new Promise(r => setTimeout(r, t));
+const hash = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
+const fmtTime = t => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const dayKey = t => new Date(t).toDateString();
+const fmtDay = t => { const d = new Date(t), n = new Date(); if (d.toDateString() === n.toDateString()) return "Today"; n.setDate(n.getDate() - 1); if (d.toDateString() === n.toDateString()) return "Yesterday"; return d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }); };
+const fmtShort = t => { const d = new Date(t); return dayKey(t) === new Date().toDateString() ? fmtTime(t) : d.toLocaleDateString([], { day: "numeric", month: "short" }); };
+
+const IC = {
+  send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>', image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  back: '<path d="M15 18l-6-6 6-6"/>', plus: '<path d="M12 5v14M5 12h14"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>', sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/>', x: '<path d="M18 6L6 18M6 6l12 12"/>', check: '<path d="M20 6L9 17l-5-5"/>',
+  checks: '<path d="M2 12l5 5L17 7M12 16l1 1L22 7"/>', clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  bellOff: '<path d="M8.7 3A6 6 0 0 1 18 8c0 2.2.5 3.8 1.2 5M6 6.3C6 11 3 17 3 17h14M10.3 21a2 2 0 0 0 3.4 0M2 2l20 20"/>',
+  share: '<path d="M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14"/>', userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/>', logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>', camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'
+};
+const ic = n => `<svg class="ic" viewBox="0 0 24 24">${IC[n]}</svg>`;
+const logo = (s = 76) => `<svg class="logo" style="width:${s}px;height:${s}px" viewBox="0 0 512 512"><use href="#logo"/></svg>`;
+
+function avatar(u, size = 44, dot = false) {
+  const name = u?.displayName || u?.username || "?";
+  const h = hash(u?.username || name) % 360;
+  const url = u?.photoURL && String(u.photoURL).startsWith("https://firebasestorage.googleapis.com/") ? u.photoURL : "";
+  return `<span class="av" style="--s:${size}px;--h:${h}">${esc([...name][0]?.toUpperCase() || "?")}${url ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.remove()">` : ""}${dot ? '<i class="dot"></i>' : ""}</span>`;
+}
+
+function toast(msg, bad) {
+  const t = document.createElement("div"); t.className = "toast" + (bad ? " bad" : ""); t.textContent = msg;
+  $("#toasts").append(t); setTimeout(() => t.remove(), bad ? 5000 : 2800); return t;
+}
+function errMsg(e) {
+  const c = String(e?.code || "");
+  if (c.includes("email-already-in-use")) return "That username is already taken.";
+  if (/wrong-password|invalid-credential|user-not-found|invalid-email/.test(c)) return "Username or recovery key is incorrect.";
+  if (c.includes("permission-denied")) return "Not allowed. If you used an invite, it may already have been used.";
+  if (/network|unavailable/.test(c)) return "Network problem. Check your connection and try again.";
+  if (c.includes("too-many-requests")) return "Too many attempts. Wait a bit and try again.";
+  if (c.includes("operation-not-allowed")) return "Enable Email/Password sign-in in Firebase Authentication (see SETUP.md).";
+  if (c.includes("requires-recent-login")) return "Please sign in again, then retry.";
+  return e?.message || "Something went wrong.";
+}
+
+function sheet(title, html, mount) {
+  const el = document.createElement("div"); el.className = "sheet-wrap";
+  el.innerHTML = `<div class="scrim"></div><section class="sheet glass" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><h3>${esc(title)}</h3><button class="icon-btn x" aria-label="Close">${ic("x")}</button></header><div class="sheet-body">${html}</div></section>`;
+  const close = () => { el.classList.add("out"); setTimeout(() => el.remove(), 180); };
+  $(".scrim", el).onclick = close; $(".x", el).onclick = close;
+  $("#sheets").append(el);
+  const body = $(".sheet-body", el);
+  if (mount) mount(body, close);
+  return { el, body, close };
+}
+const confirmSheet = (title, text, label, danger = true) => new Promise(res => {
+  let done = false;
+  const s = sheet(title, `<p class="muted">${esc(text)}</p><button class="btn ${danger ? "danger" : "primary"}" id="cy">${esc(label)}</button><button class="btn ghost" id="cn">Cancel</button>`, (b, close) => {
+    $("#cy", b).onclick = () => { done = true; close(); res(true); }; $("#cn", b).onclick = close;
+  });
+  new MutationObserver((_, o) => { if (!document.body.contains(s.el)) { o.disconnect(); if (!done) res(false); } }).observe($("#sheets"), { childList: true });
+});
+
+async function resizeImage(file, max, q, square) {
+  let bmp = null;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { bmp = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); }); }
+  let sw = bmp.width, sh = bmp.height, sx = 0, sy = 0;
+  if (square) { const s = Math.min(sw, sh); sx = (sw - s) / 2; sy = (sh - s) / 2; sw = sh = s; }
+  const sc = Math.min(1, max / Math.max(sw, sh)), w = Math.max(1, Math.round(sw * sc)), h = Math.max(1, Math.round(sh * sc));
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+  const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h); cx.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+  const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", q));
+  return { blob, w, h };
+}
+
+/* ============================ THEME ============================ */
+function setTheme(t) {
+  document.documentElement.dataset.theme = t; localStorage.setItem("jc-theme", t);
+  $("#metaTheme").content = t === "dark" ? "#0b0d1a" : "#eef2ff"; renderThemeBtn();
+}
+const toggleTheme = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+function renderThemeBtn() { const b = $("#btnTheme"); if (b) b.innerHTML = ic(document.documentElement.dataset.theme === "dark" ? "sun" : "moon"); }
+
+/* ============================ CRYPTO ============================
+ * Identity: ECDH P-256 key pair per user. Private key stays on-device (IndexedDB, non-extractable)
+ * and a copy wrapped with a key derived from the recovery key is stored in Firestore.
+ * Private chats: AES-256-GCM key = HKDF(ECDH(me, peer)). Groups: random AES key wrapped per member.
+ */
+const Crypto = {
+  ecdh: { name: "ECDH", namedCurve: "P-256" },
+  async genIdentity() {
+    const kp = await crypto.subtle.generateKey(this.ecdh, true, ["deriveBits"]);
+    return { pubJwk: await crypto.subtle.exportKey("jwk", kp.publicKey), privJwk: await crypto.subtle.exportKey("jwk", kp.privateKey) };
+  },
+  importPriv: jwk => crypto.subtle.importKey("jwk", jwk, Crypto.ecdh, false, ["deriveBits"]),
+  importPub: jwk => crypto.subtle.importKey("jwk", jwk, Crypto.ecdh, true, []),
+  async shared(priv, pubStr, info) {
+    const bits = await crypto.subtle.deriveBits({ name: "ECDH", public: await this.importPub(JSON.parse(pubStr)) }, priv, 256);
+    const hk = await crypto.subtle.importKey("raw", bits, "HKDF", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: enc.encode(info) }, hk, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  },
+  async encBytes(key, bytes, aad = "") {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc.encode(aad) }, key, bytes);
+    return { iv: b64(iv), ct: b64(ct) };
+  },
+  async decBytes(key, o, aad = "") { return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(o.iv), additionalData: enc.encode(aad) }, key, unb64(o.ct))); },
+  encText: (key, t, aad) => Crypto.encBytes(key, enc.encode(t), aad),
+  async decText(key, o, aad) { return dec.decode(await Crypto.decBytes(key, o, aad)); },
+  async encBlob(key, bytes, aad) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc.encode(aad) }, key, bytes);
+    return new Blob([iv, ct], { type: "application/octet-stream" });
+  },
+  async decBlob(key, buf, aad) {
+    const u = new Uint8Array(buf);
+    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12), additionalData: enc.encode(aad) }, key, u.slice(12)));
+  },
+  genRecoveryKey() {
+    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(25));
+    return [...r].map(x => A[x % 32]).join("").match(/.{5}/g).join("-");
+  },
+  normKey: k => String(k || "").toUpperCase().replace(/[^A-Z2-9]/g, ""),
+  async authPassword(k) { // never send the recovery key itself to Firebase Auth
+    const h = await crypto.subtle.digest("SHA-256", enc.encode("jaychat-auth-v1:" + Crypto.normKey(k)));
+    return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, "0")).join("");
+  },
+  async wrapKey(k, salt) {
+    const base = await crypto.subtle.importKey("raw", enc.encode("jaychat-wrap-v1:" + Crypto.normKey(k)), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 250000 }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  },
+  async safety(a, b) {
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode([a, b].sort().join("|"))));
+    return Array.from({ length: 6 }, (_, i) => String((h[i * 4] * 16777216 + h[i * 4 + 1] * 65536 + h[i * 4 + 2] * 256 + h[i * 4 + 3]) % 100000).padStart(5, "0")).join(" ");
+  }
+};
+const idb = {
+  _db: null,
+  open() { return this._db ||= new Promise((ok, no) => { const r = indexedDB.open("jaychat", 1); r.onupgradeneeded = () => r.result.createObjectStore("keys"); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
+  async get(k) { const d = await this.open(); return new Promise((ok, no) => { const r = d.transaction("keys").objectStore("keys").get(k); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
+  async set(k, v) { const d = await this.open(); return new Promise((ok, no) => { const t = d.transaction("keys", "readwrite"); t.objectStore("keys").put(v, k); t.oncomplete = ok; t.onerror = () => no(t.error); }); },
+  async clear() { const d = await this.open(); return new Promise(ok => { const t = d.transaction("keys", "readwrite"); t.objectStore("keys").clear(); t.oncomplete = ok; t.onerror = ok; }); }
+};
+
+/* ============================ STATE ============================ */
+const DEFAULT_PREFS = { presence: true, typing: true, receipts: true, notify: true, globalTtl: 0, muted: {}, fcmTokens: [] };
+const S = {
+  uid: null, profile: null, prefs: { ...DEFAULT_PREFS }, priv: null, recoveryKey: null, onboarding: false,
+  chats: new Map(), chatsReady: false, users: new Map(), userUnsubs: new Map(), blocks: new Set(),
+  previews: new Map(), keys: new Map(), unsubs: [], active: null, msgUnsub: null, msgs: [], msgLimit: PAGE, msgsReady: false,
+  decCache: new Map(), imgCache: new Map(), imgInflight: new Map(), uploads: [], filter: "", hb: null, installEvt: null, lastMark: ""
+};
+const userRef = uid => doc(db, "users", uid);
+const prefsRef = () => doc(db, "users", S.uid, "private", "prefs");
+const chatRef = id => doc(db, "chats", id);
+const chatKeyId = (a, b) => [a, b].sort().join("_");
+
+/* ============================ GATE (landing / onboarding / sign-in) ============================ */
+const Onb = { code: "", inviter: null, avatar: null };
+
+function showScreen(name) {
+  $("#splash").hidden = name !== "splash"; $("#gate").hidden = name !== "gate"; $("#app").hidden = name !== "app";
+}
+function gate(step, extra) {
+  showScreen("gate");
+  const g = $("#gate"); const card = (html) => { g.innerHTML = `<div class="card glass">${html}</div>`; };
+  const back = `<button class="link" id="gBack" style="align-self:flex-start;margin-left:-6px">${"\u2190"} Back</button>`;
+  if (step === "landing") {
+    card(`${logo()}<h1>JayChat</h1><p class="muted" style="margin:0">A private place for your people. Invite-only and end-to-end encrypted.</p>
+      <button class="btn primary" id="gCode">I have an invite code</button>
+      <button class="btn locked" id="gGen"><b>Generate invite code</b><span class="tiny">Available once you're inside</span></button>
+      <button class="link" id="gSign">Sign in on this device</button>`);
+    $("#gCode").onclick = () => gate("code"); $("#gSign").onclick = () => gate("signin");
+    $("#gGen").onclick = () => gate("signin", "Sign in first. Invite codes are created from inside the app.");
+  }
+  if (step === "code") {
+    card(`${back}<h2>Enter your invite code</h2><p class="muted small" style="margin:0">Each code works once. Ask a friend who's already in to generate one.</p>
+      <div class="field"><label for="iCode">Invite code</label><input class="inp mono" id="iCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EFGH-JKLM-NPQR" value="${esc(Onb.code)}"></div>
+      <div class="err" id="gErr"></div><button class="btn primary" id="gGo">Continue</button>`);
+    $("#gBack").onclick = () => gate("landing");
+    const go = async () => {
+      const code = $("#iCode").value.trim().toUpperCase().replace(/\s+/g, ""); if (code.length < 12) { $("#gErr").textContent = "That code looks too short."; return; }
+      const b = $("#gGo"); b.disabled = true; $("#gErr").textContent = "";
+      try {
+        const d = await getDoc(doc(db, "invites", code));
+        if (!d.exists() || d.data().used) throw Object.assign(new Error("This invite code is invalid or has already been used."), { code: "x" });
+        Onb.code = code; Onb.inviter = { uid: d.data().createdBy, name: d.data().createdByName || null, pub: d.data().pub || null };
+        gate("profile");
+      } catch (e) { $("#gErr").textContent = e.code === "x" ? e.message : errMsg(e); b.disabled = false; }
+    };
+    $("#gGo").onclick = go; $("#iCode").onkeydown = e => e.key === "Enter" && go();
+  }
+  if (step === "profile") {
+    card(`${back}<h2>Create your profile</h2>${Onb.inviter?.name ? `<p class="muted small" style="margin:0">Invited by <b>${esc(Onb.inviter.name)}</b></p>` : ""}
+      <div class="pick"><span id="pAv">${avatar({ displayName: "?" }, 64)}</span><button class="btn ghost sm" id="pPick">${ic("camera")} Add photo (optional)</button></div>
+      <div class="field"><label for="pUser">Username</label><input class="inp" id="pUser" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. blue.jay"><div class="hint" id="pHint">3-20 letters, numbers, . or _ (not case sensitive)</div></div>
+      <div class="field"><label for="pName">Display name</label><input class="inp" id="pName" maxlength="40" autocomplete="off" placeholder="What friends see"></div>
+      <div class="err" id="gErr"></div><button class="btn primary" id="gGo">Create account</button>`);
+    $("#gBack").onclick = () => gate("code");
+    $("#pPick").onclick = () => { const f = $("#filePick"); f.onchange = async () => { const file = f.files[0]; f.value = ""; if (!file) return; try { Onb.avatar = (await resizeImage(file, 320, .85, true)).blob; $("#pAv").innerHTML = `<span class="av" style="--s:64px"><img src="${URL.createObjectURL(Onb.avatar)}" alt=""></span>`; } catch { toast("Couldn't read that image", true); } }; f.click(); };
+    const u = $("#pUser"), h = $("#pHint");
+    u.oninput = () => { const ok = /^[A-Za-z0-9_.]{3,20}$/.test(u.value); h.className = "hint" + (u.value ? (ok ? " good" : " bad") : ""); h.textContent = ok ? "Looks good. Availability is checked when you create the account." : "3-20 letters, numbers, . or _ (not case sensitive)"; };
+    $("#gGo").onclick = () => createAccount($("#pUser").value.trim(), $("#pName").value.trim());
+  }
+  if (step === "recovery") {
+    card(`${logo(56)}<h2>Save your recovery key</h2>
+      <p class="muted small" style="margin:0">This key signs you in on a new device and unlocks your encrypted messages there. <b>It is shown only once and nobody can recover it for you.</b></p>
+      <div class="keybox" id="rKey">${esc(extra)}</div>
+      <div class="row"><button class="btn ghost sm grow" id="rCopy">${ic("copy")} Copy</button><button class="btn ghost sm grow" id="rSave">${ic("download")} Save file</button></div>
+      <label class="check"><input type="checkbox" id="rOk"> I saved my recovery key somewhere safe.</label>
+      <button class="btn primary" id="gGo" disabled>Enter JayChat</button>`);
+    $("#rCopy").onclick = async () => { try { await navigator.clipboard.writeText(extra); toast("Recovery key copied"); } catch { toast("Copy failed. Select the key and copy it manually.", true); } };
+    $("#rSave").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([`JayChat recovery key\nUsername: ${S.profile?.username}\nKey: ${extra}\n\nKeep this private. Anyone with this key can sign in as you.\n`], { type: "text/plain" })); a.download = "jaychat-recovery-key.txt"; a.click(); };
+    $("#rOk").onchange = e => $("#gGo").disabled = !e.target.checked;
+    $("#gGo").onclick = async () => { S.onboarding = false; try { await startSession(auth.currentUser); } catch (e) { toast(errMsg(e), true); } };
+  }
+  if (step === "signin") {
+    card(`${back}<h2>Sign in</h2>${extra ? `<p class="small" style="margin:0;color:var(--a1)">${esc(extra)}</p>` : ""}<p class="muted small" style="margin:0">Use your username and the recovery key you saved when you joined.</p>
+      <div class="field"><label for="sUser">Username</label><input class="inp" id="sUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+      <div class="field"><label for="sKey">Recovery key</label><input class="inp mono" id="sKey" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></div>
+      <div class="err" id="gErr"></div><button class="btn primary" id="gGo">Sign in</button>`);
+    $("#gBack").onclick = () => gate("landing");
+    const go = async () => {
+      const u = $("#sUser").value.trim().toLowerCase(), k = $("#sKey").value; if (!u || Crypto.normKey(k).length < 20) { $("#gErr").textContent = "Enter your username and full recovery key."; return; }
+      const b = $("#gGo"); b.disabled = true; $("#gErr").textContent = "";
+      try { S.recoveryKey = k; await signInWithEmailAndPassword(auth, `${u}@${EMAIL_DOMAIN}`, await Crypto.authPassword(k)); }
+      catch (e) { S.recoveryKey = null; $("#gErr").textContent = errMsg(e); b.disabled = false; }
+    };
+    $("#gGo").onclick = go; $("#sKey").onkeydown = e => e.key === "Enter" && go();
+  }
+}
+
+async function createAccount(username, displayName) {
+  const err = $("#gErr"), btn = $("#gGo"); err.textContent = "";
+  if (!/^[A-Za-z0-9_.]{3,20}$/.test(username)) { err.textContent = "Username must be 3-20 letters, numbers, . or _"; return; }
+  if (!displayName || displayName.length > 40) { err.textContent = "Enter a display name (up to 40 characters)."; return; }
+  btn.disabled = true; btn.textContent = "Creating your account…";
+  const lower = username.toLowerCase(); S.onboarding = true;
+  let user = null;
+  try {
+    const recovery = Crypto.genRecoveryKey();
+    user = (await createUserWithEmailAndPassword(auth, `${lower}@${EMAIL_DOMAIN}`, await Crypto.authPassword(recovery))).user;
+    const uid = user.uid, ident = await Crypto.genIdentity(), pub = JSON.stringify(ident.pubJwk);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const wrapped = await Crypto.encBytes(await Crypto.wrapKey(recovery, salt), enc.encode(JSON.stringify(ident.privJwk)), "jaychat-key");
+    const inv = await getDoc(doc(db, "invites", Onb.code));
+    if (!inv.exists() || inv.data().used) throw Object.assign(new Error("This invite was already used."), { code: "permission-denied" });
+    const inviterUid = inv.data().createdBy, inviterPub = inv.data().pub, realInviter = !!inviterPub && inviterUid && inviterUid !== "admin";
+    const b = writeBatch(db);
+    b.set(userRef(uid), { username, usernameLower: lower, displayName, photoURL: null, pub, invitedBy: inviterUid, inviteCode: Onb.code, online: false, lastSeen: serverTimestamp(), createdAt: serverTimestamp() });
+    b.set(doc(db, "usernames", lower), { uid, username });
+    b.update(doc(db, "invites", Onb.code), { used: true, usedBy: uid, usedAt: serverTimestamp() });
+    b.set(doc(db, "users", uid, "private", "keys"), { v: 1, salt: b64(salt), ...wrapped });
+    b.set(doc(db, "users", uid, "private", "prefs"), DEFAULT_PREFS);
+    if (realInviter) { // accepting an invite = friendship + private chat with the inviter
+      const parts = [inviterUid, uid].sort();
+      b.set(chatRef(parts.join("_")), { type: "private", participants: parts, pubs: { [inviterUid]: inviterPub, [uid]: pub }, state: {}, ttl: 0, lastMessage: null, createdBy: uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    }
+    await b.commit();
+    await idb.set("priv:" + uid, await Crypto.importPriv(ident.privJwk));
+    S.uid = uid; S.profile = { username, displayName, pub };
+    if (Onb.avatar) { try { await uploadAvatar(uid, Onb.avatar); } catch (e) { console.warn("avatar", e); } }
+    Onb.code = ""; Onb.avatar = null;
+    gate("recovery", recovery);
+  } catch (e) {
+    console.error(e);
+    if (user) await user.delete().catch(() => { });
+    S.onboarding = false; gate("profile"); const er = $("#gErr"); if (er) er.textContent = errMsg(e);
+    $("#pUser").value = username; $("#pName").value = displayName;
+  }
+}
+async function uploadAvatar(uid, blob) {
+  const r = sref(storage, "avatars/" + uid); await uploadBytes(r, blob, { contentType: "image/jpeg" });
+  const url = (await getDownloadURL(r)) + "&v=" + Date.now(); await updateDoc(userRef(uid), { photoURL: url }); return url;
+}
+
+/* Unlock: restore the private key from its recovery-key-wrapped copy */
+async function ensurePrivateKey(uid) {
+  let k = await idb.get("priv:" + uid); if (k) { S.priv = k; return; }
+  const ask = () => new Promise(res => {
+    const s = sheet("Unlock your messages", `<p class="muted small">This device doesn't have your encryption key yet. Enter your recovery key to restore it.</p><input class="inp mono" id="uk" autocomplete="off" autocapitalize="characters" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"><div class="err" id="ue"></div><button class="btn primary" id="ug">Unlock</button><button class="btn ghost" id="uo">Sign out</button>`, (b, close) => {
+      $("#uo", b).onclick = async () => { close(); await doSignOut(); res(null); };
+      $("#ug", b).onclick = async () => { const r = await tryUnlock(uid, $("#uk", b).value); if (r) { close(); res(r); } else $("#ue", b).textContent = "That recovery key didn't work."; };
+    });
+    $(".scrim", s.el).onclick = null; $(".x", s.el).hidden = true;
+  });
+  if (S.recoveryKey) k = await tryUnlock(uid, S.recoveryKey);
+  if (!k) k = await ask();
+  S.priv = k; S.recoveryKey = null;
+}
+async function tryUnlock(uid, rk) {
+  try {
+    const d = await getDoc(doc(db, "users", uid, "private", "keys")); if (!d.exists()) return null; const w = d.data();
+    const jwk = JSON.parse(dec.decode(await Crypto.decBytes(await Crypto.wrapKey(rk, unb64(w.salt)), w, "jaychat-key")));
+    const key = await Crypto.importPriv(jwk); await idb.set("priv:" + uid, key); return key;
+  } catch (e) { console.warn("unlock failed", e); return null; }
+}
+
+/* ============================ SESSION ============================ */
+onAuthStateChanged(auth, async user => {
+  if (S.onboarding) return;
+  if (!user) { stopSession(); gate("landing"); const h = location.hash.match(/invite=([A-Za-z0-9-]+)/); if (h) { Onb.code = h[1].toUpperCase(); history.replaceState(null, "", location.pathname); gate("code"); } return; }
+  try { await startSession(user); }
+  catch (e) {
+    console.error(e);
+    if (e.message === "noprofile") { await user.delete().catch(() => signOut(auth)); gate("landing"); toast("Account setup was incomplete. Please start again with an invite.", true); }
+    else { showScreen("splash"); $("#splash").innerHTML = `<div class="card glass"><h2>Can't connect</h2><p class="muted">${esc(errMsg(e))}</p><button class="btn primary" onclick="location.reload()">Retry</button></div>`; }
+  }
+});
+
+async function startSession(user) {
+  showScreen("splash"); $("#splash").innerHTML = '<div class="spinner"></div>';
+  S.uid = user.uid;
+  const p = await getDoc(userRef(S.uid));
+  if (!p.exists()) throw new Error("noprofile");
+  S.profile = { uid: S.uid, ...p.data() };
+  await ensurePrivateKey(S.uid); if (!S.priv) return;
+  const pd = await getDoc(prefsRef()).catch(() => null);
+  S.prefs = { ...DEFAULT_PREFS, ...(pd?.exists() ? pd.data() : {}) };
+  S.users.set(S.uid, S.profile);
+  S.unsubs.push(onSnapshot(prefsRef(), s => { if (s.exists()) { S.prefs = { ...DEFAULT_PREFS, ...s.data() }; } }));
+  S.unsubs.push(onSnapshot(userRef(S.uid), s => { if (s.exists()) { S.profile = { uid: S.uid, ...s.data() }; S.users.set(S.uid, S.profile); renderMe(); } }));
+  S.unsubs.push(onSnapshot(query(collection(db, "blocks"), where("blocker", "==", S.uid)), s => { S.blocks = new Set(s.docs.map(d => d.data().blocked)); renderList(); if (S.active) renderChatChrome(); }));
+  S.unsubs.push(onSnapshot(query(collection(db, "chats"), where("participants", "array-contains", S.uid)), onChats, e => console.error("chats", e)));
+  showScreen("app"); renderShell(); startPresence(); routeFromHash();
+  if (S.prefs.notify && "Notification" in window && Notification.permission === "granted") enablePush(true);
+}
+function stopSession() {
+  S.unsubs.forEach(u => u()); S.unsubs = []; S.userUnsubs.forEach(u => u()); S.userUnsubs.clear();
+  S.msgUnsub?.(); S.msgUnsub = null; clearInterval(S.hb); S.chats.clear(); S.users.clear(); S.keys.clear(); S.previews.clear();
+  S.active = null; S.chatsReady = false; S.priv = null; S.uid = null; S.profile = null; S.prefs = { ...DEFAULT_PREFS };
+}
+async function doSignOut() {
+  if (S.uid) await setPresence(false).catch(() => { });
+  stopSession(); try { await signOut(auth); await idb.clear(); await terminate(db); await clearIndexedDbPersistence(db); } catch (e) { console.warn(e); }
+  location.replace(location.pathname);
+}
+
+/* ---------- presence ---------- */
+function setPresence(on) {
+  if (!S.uid) return Promise.resolve();
+  const patch = S.prefs.presence ? { online: on, lastSeen: serverTimestamp() } : { online: false, lastSeen: null };
+  return updateDoc(userRef(S.uid), patch).catch(() => { });
+}
+function startPresence() {
+  clearInterval(S.hb); setPresence(document.visibilityState === "visible");
+  S.hb = setInterval(() => { if (document.visibilityState === "visible") setPresence(true); }, 60000);
+}
+const isOnline = u => S.prefs.presence && u && u.online && Date.now() - ms(u.lastSeen) < 150000;
+function seenText(u) {
+  if (!S.prefs.presence || !u || u.deleted) return ""; if (isOnline(u)) return "online";
+  const t = ms(u.lastSeen); return t ? `last seen ${fmtShort(t)}` : "";
+}
+document.addEventListener("visibilitychange", () => { if (!S.uid) return; setPresence(document.visibilityState === "visible"); if (document.visibilityState === "visible") markRead(); });
+addEventListener("pagehide", () => { if (S.uid) setPresence(false); });
+addEventListener("online", () => $("#offline").hidden = true); addEventListener("offline", () => $("#offline").hidden = false);
+if (!navigator.onLine) $("#offline").hidden = false;
+
+/* ---------- users cache ---------- */
+function watchUser(uid) {
+  if (!uid || S.userUnsubs.has(uid)) return;
+  S.userUnsubs.set(uid, onSnapshot(userRef(uid), s => {
+    S.users.set(uid, s.exists() ? { uid, ...s.data({ serverTimestamps: "estimate" }) } : { uid, deleted: true, displayName: "Deleted user", username: "deleted" });
+    clearTimeout(watchUser.t); watchUser.t = setTimeout(() => { renderList(); if (S.active) { renderChatChrome(); renderMessages(); } }, 60);
+  }, () => { }));
+}
+const U = uid => S.users.get(uid) || { uid, displayName: "…", username: "" };
+
+/* ---------- chats ---------- */
+const peerUid = c => c.type === "private" ? Object.keys(c.pubs || {}).find(x => x !== S.uid) : null;
+function chatTitle(c) { if (c.type === "group") return c.name || "Group"; return U(peerUid(c)).displayName; }
+const chatMuted = id => !!S.prefs.muted?.[id];
+const peerGone = c => c.type === "private" && (c.participants.length < 2 || U(peerUid(c)).deleted);
+
+async function chatKey(c) {
+  if (S.keys.has(c.id)) return S.keys.get(c.id);
+  let key;
+  if (c.type === "private") {
+    key = await Crypto.shared(S.priv, c.pubs[peerUid(c)], "chat:" + c.id);
+  } else {
+    const e = c.keys?.[S.uid]; if (!e) throw new Error("no group key");
+    const kek = await Crypto.shared(S.priv, c.pubs[e.by], "group:" + c.id);
+    key = await crypto.subtle.importKey("raw", await Crypto.decBytes(kek, e, c.id), "AES-GCM", false, ["encrypt", "decrypt"]);
+  }
+  S.keys.set(c.id, key); return key;
+}
+async function updatePreview(c) {
+  const l = c.lastMessage; if (!l) { S.previews.delete(c.id); return; }
+  const stamp = ms(l.at), cur = S.previews.get(c.id); if (cur && cur.at === stamp) return;
+  let text = l.type === "image" ? "\uD83D\uDCF7 Photo" : "Encrypted message";
+  if (l.type !== "image") { try { text = (await Crypto.decText(await chatKey(c), l.enc, c.id)).slice(0, 120); } catch { } }
+  S.previews.set(c.id, { at: stamp, text }); return text;
+}
+function onChats(snap) {
+  const changes = snap.docChanges();
+  const prev = new Map(S.chats);
+  const seen = new Set();
+  snap.docs.forEach(d => { const c = { id: d.id, ...d.data({ serverTimestamps: "estimate" }) }; seen.add(d.id); S.chats.set(d.id, c); });
+  for (const id of [...S.chats.keys()]) if (!seen.has(id)) { S.chats.delete(id); S.keys.delete(id); if (S.active === id) closeChat(); }
+  S.chatsReady = true;
+  S.chats.forEach(c => { if (c.type === "private") watchUser(peerUid(c)); else c.participants.forEach(watchUser); });
+  renderList();
+  Promise.all([...S.chats.values()].map(async c => { const before = S.previews.get(c.id)?.at; await updatePreview(c); return [c, before]; })).then(res => {
+    renderList();
+    for (const ch of changes) {
+      if (ch.type !== "modified" || ch.doc.metadata.hasPendingWrites) continue;
+      const c = S.chats.get(ch.doc.id), old = prev.get(ch.doc.id);
+      if (c && c.lastMessage && c.lastMessage.from !== S.uid && ms(c.lastMessage.at) > ms(old?.lastMessage?.at)) notifyIncoming(c);
+    }
+  });
+  if (S.active) { renderChatChrome(); renderMessages(); markRead(); }
+  updateBadge();
+}
+const unread = c => c.lastMessage && c.lastMessage.from !== S.uid && ms(c.lastMessage.at) > ms(c.state?.[S.uid]?.lastOpened) && !(S.active === c.id && document.visibilityState === "visible");
+function updateBadge() {
+  const n = [...S.chats.values()].filter(c => unread(c) && !chatMuted(c.id)).length;
+  document.title = n ? `(${n}) JayChat` : "JayChat"; if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => { });
+}
+
+/* ---------- shell + chat list ---------- */
+function renderShell() {
+  $("#btnNew").innerHTML = ic("plus"); $("#btnBack").innerHTML = ic("back"); $("#btnInfo2").innerHTML = ic("info"); renderThemeBtn(); renderMe();
+  $("#btnMe").onclick = openSettings; $("#btnTheme").onclick = toggleTheme; $("#btnNew").onclick = openNewChat;
+  $("#btnBack").onclick = () => history.length > 1 && location.hash.startsWith("#/chat/") ? history.back() : (location.hash = "");
+  $("#btnInfo").onclick = $("#btnInfo2").onclick = openChatInfo;
+  $("#filter").oninput = e => { S.filter = e.target.value.toLowerCase(); renderList(); };
+  $("#list").onclick = e => { const b = e.target.closest("[data-chat]"); if (b) location.hash = "#/chat/" + b.dataset.chat; const i = e.target.closest("[data-act]"); if (i) i.dataset.act === "invite" ? openInvite() : openNewChat(); };
+  $("#msgs").onclick = onMsgClick; renderList();
+}
+function renderMe() { const b = $("#btnMe"); if (b) { b.innerHTML = avatar(S.profile, 36); b.style.width = b.style.height = "40px"; } }
+function renderList() {
+  const el = $("#list"); if (!el || $("#app").hidden) return;
+  if (!S.chatsReady) { el.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>'; return; }
+  const all = [...S.chats.values()].sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt));
+  const list = all.filter(c => !S.filter || chatTitle(c).toLowerCase().includes(S.filter));
+  if (!all.length) { el.innerHTML = `<div class="empty">${logo(64)}<h3>No conversations yet</h3><span>Invite a friend or start a chat with someone who's already here.</span><button class="btn primary sm" data-act="invite">${ic("userPlus")} Invite a friend</button><button class="btn ghost sm" data-act="new">Find a username</button></div>`; return; }
+  if (!list.length) { el.innerHTML = '<div class="empty"><span>No chats match your search.</span></div>'; return; }
+  el.innerHTML = list.map(c => {
+    const pu = c.type === "private" ? U(peerUid(c)) : null, l = c.lastMessage, pv = S.previews.get(c.id);
+    const who = l && c.type === "group" && l.from !== S.uid ? U(l.from).displayName.split(" ")[0] + ": " : l && l.from === S.uid ? "You: " : "";
+    const av = c.type === "group" ? `<span class="av" style="--s:52px;--h:${hash(c.id) % 360}">${esc([...(c.name || "G")][0].toUpperCase())}</span>` : avatar(pu, 52, pu && isOnline(pu));
+    return `<button class="item ${S.active === c.id ? "on" : ""}" data-chat="${esc(c.id)}">${av}<span class="grow"><span class="t"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(chatTitle(c))}${chatMuted(c.id) ? " \uD83D\uDD07" : ""}${pu && S.blocks.has(pu.uid) ? " \uD83D\uDEAB" : ""}</span><time>${l ? fmtShort(ms(l.at) || Date.now()) : ""}</time></span><span class="p"><span>${l ? esc(who + (pv?.text || "…")) : "Say hi \uD83D\uDC4B"}</span></span></span>${unread(c) && !chatMuted(c.id) ? '<i class="badge"></i>' : ""}</button>`;
+  }).join("");
+}
+
+/* ---------- routing ---------- */
+function routeFromHash() {
+  const m = location.hash.match(/^#\/chat\/(.+)$/);
+  if (m && S.uid) openChat(decodeURIComponent(m[1])); else if (S.active) closeChat(true);
+}
+addEventListener("hashchange", () => { if (S.uid) routeFromHash(); });
+
+function closeChat(fromRoute) {
+  S.msgUnsub?.(); S.msgUnsub = null; S.active = null; S.msgs = [];
+  $("#app").classList.remove("in-chat"); $("#chatView").hidden = true; renderList(); updateBadge();
+  if (!fromRoute && location.hash.startsWith("#/chat/")) history.replaceState(null, "", location.pathname);
+}
+function openChat(id) {
+  if (S.active === id) return;
+  const c = S.chats.get(id);
+  if (!c) { if (S.chatsReady) { toast("That conversation isn't available.", true); history.replaceState(null, "", location.pathname); } else setTimeout(() => S.uid && routeFromHash(), 400); return; }
+  S.msgUnsub?.(); S.active = id; S.msgs = []; S.msgsReady = false; S.msgLimit = PAGE; S.uploads = [];
+  $("#app").classList.add("in-chat"); $("#chatView").hidden = false; $("#msgs").innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+  renderChatChrome(); subscribeMessages(); renderList(); markRead(); setTimeout(() => $("#input")?.focus({ preventScroll: true }), 350);
+}
+function subscribeMessages(keepAnchor) {
+  S.msgUnsub?.(); const id = S.active;
+  S.msgUnsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("createdAt", "desc"), limit(S.msgLimit)), async snap => {
+    const c = S.chats.get(id); if (!c || S.active !== id) return;
+    let key = null; try { key = await chatKey(c); } catch (e) { console.warn("key", e); }
+    const rows = await Promise.all(snap.docs.map(async d => {
+      const m = { id: d.id, ...d.data({ serverTimestamps: "estimate" }), pending: d.metadata.hasPendingWrites };
+      const ck = d.id + (m.enc?.iv || ""); let t = S.decCache.get(ck);
+      if (t === undefined) { try { t = key ? await Crypto.decText(key, m.enc, id) : null; } catch { t = null; } if (t !== null) S.decCache.set(ck, t); }
+      m.text = t; return m;
+    }));
+    if (S.active !== id) return;
+    S.msgs = rows.reverse(); const first = !S.msgsReady; S.msgsReady = true; renderMessages(first, keepAnchor);
+  }, e => { console.error(e); toast(errMsg(e), true); });
+}
+async function markRead() {
+  const c = S.chats.get(S.active); if (!c || document.visibilityState !== "visible" || !c.lastMessage || c.lastMessage.from === S.uid) return;
+  const opened = ms(c.state?.[S.uid]?.lastOpened); if (ms(c.lastMessage.at) <= opened && opened) return;
+  const tag = c.id + ":" + ms(c.lastMessage.at); if (S.lastMark === tag) return; S.lastMark = tag;
+  const patch = { [`state.${S.uid}.lastOpened`]: serverTimestamp() }; if (S.prefs.receipts) patch[`state.${S.uid}.readAt`] = serverTimestamp();
+  updateDoc(chatRef(c.id), patch).catch(() => { S.lastMark = ""; });
+}
+
+/* ---------- chat header + composer ---------- */
+function renderChatChrome() {
+  const c = S.chats.get(S.active); if (!c) return;
+  const pu = c.type === "private" ? U(peerUid(c)) : null;
+  $("#hAv").innerHTML = c.type === "group" ? `<span class="av" style="--s:42px;--h:${hash(c.id) % 360}">${esc([...(c.name || "G")][0].toUpperCase())}</span>` : avatar(pu, 42, pu && isOnline(pu));
+  $("#hName").textContent = chatTitle(c); updateTyping();
+  const blockedByMe = pu && S.blocks.has(pu.uid), cw = $("#composerWrap");
+  const mode = peerGone(c) ? "gone" : blockedByMe ? "blocked" : "ok";
+  if (cw.dataset.mode !== mode + c.id) {
+    cw.dataset.mode = mode + c.id;
+    if (mode === "ok") {
+      cw.innerHTML = `<div class="composer glass"><button class="icon-btn" id="btnAttach" aria-label="Send a photo">${ic("image")}</button><textarea id="input" rows="1" maxlength="4000" placeholder="Message" enterkeyhint="send" aria-label="Message"></textarea><button class="send" id="btnSend" aria-label="Send" disabled>${ic("send")}</button></div>`;
+      const inp = $("#input"), send = $("#btnSend");
+      inp.oninput = () => { inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 140) + "px"; send.disabled = !inp.value.trim(); sendTyping(); };
+      inp.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey && matchMedia("(pointer:fine)").matches) { e.preventDefault(); doSend(); } };
+      send.onclick = doSend; $("#btnAttach").onclick = () => { const f = $("#filePick"); f.onchange = () => { const file = f.files[0]; f.value = ""; if (file) sendImage(file); }; f.click(); };
+    } else if (mode === "blocked") {
+      cw.innerHTML = `<div class="banner glass">You blocked ${esc(pu.displayName)}. <button class="link" id="unb">Unblock</button></div>`; $("#unb").onclick = () => toggleBlock(pu.uid);
+    } else cw.innerHTML = `<div class="banner glass">This person deleted their account. You can no longer send messages here.</div>`;
+  }
+}
+let typingAt = 0;
+function sendTyping() {
+  if (!S.prefs.typing || Date.now() - typingAt < 3000) return; typingAt = Date.now();
+  updateDoc(chatRef(S.active), { [`state.${S.uid}.typingAt`]: Date.now() }).catch(() => { });
+}
+function typers(c) { if (!S.prefs.typing) return []; return c.participants.filter(p => p !== S.uid && Date.now() - (c.state?.[p]?.typingAt || 0) < 6000 && !S.blocks.has(p)); }
+function updateTyping() {
+  const c = S.chats.get(S.active); if (!c) return; const t = typers(c);
+  $("#typing").textContent = t.length ? (c.type === "group" ? t.map(u => U(u).displayName.split(" ")[0]).join(", ") + " typing…" : "typing…") : "";
+  $("#hStatus").textContent = t.length ? "typing…" : c.type === "group" ? `${c.participants.length} members` : seenText(U(peerUid(c)));
+}
+setInterval(() => { if (S.active) updateTyping(); }, 2000);
+
+/* ---------- messages ---------- */
+function effectiveTtl(c) { return c.ttl || S.prefs.globalTtl || 0; }
+function renderMessages(first, keepAnchor) {
+  const c = S.chats.get(S.active), el = $("#msgs"); if (!c) return;
+  const prevH = el.scrollHeight, near = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+  const now = Date.now();
+  const vis = S.msgs.filter(m => !S.blocks.has(m.sender) || m.sender === S.uid).filter(m => {
+    const ex = ms(m.expireAt); if (ex && ex < now) { if (m.sender === S.uid && !m.pending) cleanupExpired(c, m); return false; } return true;
+  });
+  const others = c.participants.filter(p => p !== S.uid);
+  const readMax = S.prefs.receipts ? Math.max(0, ...others.map(p => ms(c.state?.[p]?.readAt))) : 0;
+  let html = "", lastDay = "";
+  if (S.msgs.length >= S.msgLimit) html += `<button class="btn ghost sm more" id="btnMore">Load earlier messages</button>`;
+  if (!vis.length && S.msgsReady && !S.uploads.length) html += `<div class="empty">${ic("lock")}<h3>Say hi \uD83D\uDC4B</h3><span>Messages here are end-to-end encrypted. Only people in this chat can read them.</span></div>`;
+  vis.forEach((m, i) => {
+    const t = ms(m.createdAt) || now, dk = dayKey(t), mine = m.sender === S.uid, prev = vis[i - 1];
+    if (dk !== lastDay) { html += `<div class="day">${esc(fmtDay(t))}</div>`; lastDay = dk; }
+    const showName = !mine && c.type === "group" && (!prev || prev.sender !== m.sender || dayKey(ms(prev.createdAt)) !== dk);
+    let body = "";
+    if (m.type === "image" && m.img && typeof m.img.path === "string") {
+      const w = Math.min(4000, Math.max(1, +m.img.w | 0)), h = Math.min(4000, Math.max(1, +m.img.h | 0)), cached = S.imgCache.get(m.img.path);
+      body += `<div class="pic-wrap${cached ? " ready" : ""}" style="--ar:${w}/${h}" data-open="1"><img data-path="${esc(m.img.path)}" ${cached ? `src="${cached}"` : ""} alt="Photo"><span class="spinner"></span></div>`;
+      if (m.text) body += linkify(esc(m.text));
+    } else body += m.text === null ? "\uD83D\uDD12 Can't decrypt this message" : linkify(esc(m.text));
+    let tick = "";
+    if (mine) tick = m.pending ? ic("clock") : (readMax >= t ? `<span class="seen">${ic("checks")}</span>` : ic("check"));
+    html += `<div class="msg ${mine ? "out" : "in"}"><div class="bubble${m.text === null ? " bad" : ""}" data-id="${esc(m.id)}">${showName ? `<div class="who">${esc(U(m.sender).displayName)}</div>` : ""}${body}<div class="meta">${ms(m.expireAt) ? ic("clock") : ""}${fmtTime(t)}${tick}</div></div></div>`;
+  });
+  S.uploads.forEach(u => { html += `<div class="msg out"><div class="bubble"><div class="pic-wrap ready" style="--ar:${u.w}/${u.h}"><img src="${u.url}" alt="" style="opacity:.6"></div><div class="meta">Sending…</div></div></div>`; });
+  el.innerHTML = html;
+  if (keepAnchor) el.scrollTop = el.scrollHeight - prevH; else if (first || near) el.scrollTop = el.scrollHeight;
+  hydrateImages(c);
+}
+async function cleanupExpired(c, m) {
+  if (cleanupExpired.done?.has(m.id)) return; (cleanupExpired.done ||= new Set()).add(m.id);
+  deleteDoc(doc(db, "chats", c.id, "messages", m.id)).catch(() => { });
+  if (m.img?.path) deleteObject(sref(storage, m.img.path)).catch(() => { });
+}
+setInterval(() => { if (S.active && S.msgs.some(m => ms(m.expireAt))) renderMessages(); }, 30000);
+
+function imageUrl(c, path) {
+  if (S.imgCache.has(path)) return Promise.resolve(S.imgCache.get(path));
+  if (S.imgInflight.has(path)) return S.imgInflight.get(path);
+  const p = (async () => {
+    const buf = await getBytes(sref(storage, path)); const raw = await Crypto.decBlob(await chatKey(c), buf, c.id);
+    const url = URL.createObjectURL(new Blob([raw], { type: "image/jpeg" })); S.imgCache.set(path, url); return url;
+  })().finally(() => S.imgInflight.delete(path));
+  S.imgInflight.set(path, p); return p;
+}
+function hydrateImages(c) {
+  $$("#msgs .pic-wrap").forEach(async w => {
+    const img = $("img", w); if (img.getAttribute("src")) { w.classList.add("ready"); return; }
+    const path = img.dataset.path; if (!path.startsWith(`chats/${c.id}/`)) { w.classList.add("err"); return; }
+    try { const url = await imageUrl(c, path); if (img.isConnected) { img.src = url; w.classList.add("ready"); } } catch (e) { console.warn("img", e); w.classList.add("err"); }
+  });
+}
+function onMsgClick(e) {
+  if (e.target.closest("#btnMore")) { S.msgLimit += PAGE; subscribeMessages(true); return; }
+  if (e.target.closest("a")) return;
+  const w = e.target.closest(".pic-wrap.ready");
+  const b = e.target.closest(".bubble"); if (!b) return;
+  const m = S.msgs.find(x => x.id === b.dataset.id); if (!m) return;
+  if (w) { const lb = $("#lightbox"); lb.innerHTML = `<img src="${$("img", w).src}" alt="Photo"><button aria-label="Close">${ic("x")}</button>`; lb.hidden = false; lb.onclick = () => lb.hidden = true; return; }
+  msgMenu(m);
+}
+function msgMenu(m) {
+  const mine = m.sender === S.uid;
+  sheet("Message", `${m.text ? `<button class="opt" id="mCopy">${ic("copy")} Copy text</button>` : ""}${mine ? `<button class="opt danger" id="mDel">${ic("trash")} Delete for everyone</button>` : '<p class="muted small">Only the sender can delete a message.</p>'}`, (b, close) => {
+    $("#mCopy", b)?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(m.text); toast("Copied"); } catch { toast("Copy failed", true); } close(); });
+    $("#mDel", b)?.addEventListener("click", async () => { close(); await deleteMessage(m); });
+  });
+}
+async function deleteMessage(m) {
+  const c = S.chats.get(S.active); if (!c) return;
+  try {
+    await deleteDoc(doc(db, "chats", c.id, "messages", m.id));
+    if (m.img?.path) deleteObject(sref(storage, m.img.path)).catch(() => { });
+    const rest = S.msgs.filter(x => x.id !== m.id), last = rest[rest.length - 1];
+    if (c.lastMessage && ms(c.lastMessage.at) <= (ms(m.createdAt) || 0) + 1) {
+      await updateDoc(chatRef(c.id), { lastMessage: last ? { from: last.sender, type: last.type, enc: last.enc, at: last.createdAt } : null });
+    }
+    toast("Message deleted");
+  } catch (e) { toast(errMsg(e), true); }
+}
+
+async function doSend() {
+  const inp = $("#input"), text = inp?.value.trim(); if (!text) return;
+  const c = S.chats.get(S.active); if (!c) return; inp.value = ""; inp.style.height = "auto"; $("#btnSend").disabled = true;
+  try {
+    const key = await chatKey(c), body = await Crypto.encText(key, text, c.id), ttl = effectiveTtl(c);
+    const mref = doc(collection(db, "chats", c.id, "messages")), b = writeBatch(db);
+    b.set(mref, { sender: S.uid, chatId: c.id, type: "text", enc: body, createdAt: serverTimestamp(), expireAt: ttl ? Timestamp.fromMillis(Date.now() + ttl * 1000) : null });
+    b.update(chatRef(c.id), { lastMessage: { from: S.uid, type: "text", enc: body, at: serverTimestamp() }, updatedAt: serverTimestamp(), [`state.${S.uid}.typingAt`]: 0, [`state.${S.uid}.lastOpened`]: serverTimestamp() });
+    b.commit().catch(e => { toast("Message couldn't be sent. " + errMsg(e), true); });
+    typingAt = 0;
+  } catch (e) { toast(errMsg(e), true); inp.value = text; }
+}
+async function sendImage(file) {
+  const c = S.chats.get(S.active); if (!c) return;
+  if (!file.type.startsWith("image/") || file.size > 25 * 1024 * 1024) { toast("Choose an image under 25 MB.", true); return; }
+  if (!navigator.onLine) { toast("You're offline. Photos need a connection.", true); return; }
+  let up = null;
+  try {
+    let r = await resizeImage(file, 1280, .78); if (r.blob.size > 2.4e6) r = await resizeImage(file, 960, .6);
+    if (r.blob.size > 2.4e6) throw new Error("That photo is too large even after compression.");
+    up = { url: URL.createObjectURL(r.blob), w: r.w, h: r.h }; S.uploads.push(up); renderMessages(false);
+    $("#msgs").scrollTop = $("#msgs").scrollHeight;
+    const key = await chatKey(c), mref = doc(collection(db, "chats", c.id, "messages")), path = `chats/${c.id}/${mref.id}`;
+    const blob = await Crypto.encBlob(key, new Uint8Array(await r.blob.arrayBuffer()), c.id);
+    await uploadBytes(sref(storage, path), blob, { contentType: "application/octet-stream", customMetadata: { uid: S.uid } });
+    S.imgCache.set(path, up.url);
+    const cap = $("#input")?.value.trim() || ""; if (cap) { $("#input").value = ""; }
+    const capEnc = await Crypto.encText(key, cap, c.id), ttl = effectiveTtl(c), b = writeBatch(db);
+    b.set(mref, { sender: S.uid, chatId: c.id, type: "image", enc: capEnc, img: { path, w: r.w, h: r.h }, createdAt: serverTimestamp(), expireAt: ttl ? Timestamp.fromMillis(Date.now() + ttl * 1000) : null });
+    b.update(chatRef(c.id), { lastMessage: { from: S.uid, type: "image", enc: capEnc, at: serverTimestamp() }, updatedAt: serverTimestamp(), [`state.${S.uid}.lastOpened`]: serverTimestamp() });
+    await b.commit();
+  } catch (e) { console.error(e); toast(e.code?.includes("unauthorized") ? "Photo upload isn't allowed. Check the Storage rules." : errMsg(e), true); }
+  finally { if (up) { S.uploads = S.uploads.filter(x => x !== up); renderMessages(false); } }
+}
+
+/* ---------- notifications ---------- */
+async function notifyIncoming(c) {
+  if (chatMuted(c.id) || !S.prefs.notify) return; const from = c.lastMessage.from; if (S.blocks.has(from)) return;
+  if (S.active === c.id && document.visibilityState === "visible") return;
+  const body = (c.type === "group" ? U(from).displayName.split(" ")[0] + ": " : "") + (S.previews.get(c.id)?.text || "New message");
+  if (document.visibilityState === "visible") { const t = toast(`${chatTitle(c)}: ${body}`); t.style.cursor = "pointer"; t.onclick = () => { location.hash = "#/chat/" + c.id; t.remove(); }; return; }
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { const reg = await navigator.serviceWorker.ready; reg.showNotification(chatTitle(c), { body, tag: c.id, icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { chat: c.id } }); } catch { }
+  }
+}
+async function enablePush(silent) {
+  if (!("Notification" in window)) { if (!silent) toast("Notifications aren't supported here.", true); return false; }
+  const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+  if (perm !== "granted") { if (!silent) toast("Notifications are blocked in your browser settings.", true); return false; }
+  if (VAPID_KEY) {
+    try {
+      const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js");
+      const token = await getToken(getMessaging(fbApp), { vapidKey: VAPID_KEY, serviceWorkerRegistration: await navigator.serviceWorker.ready });
+      if (token && !(S.prefs.fcmTokens || []).includes(token)) await setDoc(prefsRef(), { fcmTokens: arrayUnion(token) }, { merge: true });
+    } catch (e) { console.warn("FCM", e); }
+  }
+  return true;
+}
+async function setPref(patch) { Object.assign(S.prefs, patch); try { await setDoc(prefsRef(), patch, { merge: true }); } catch (e) { toast(errMsg(e), true); } }
+
+/* ---------- new chat / group ---------- */
+async function searchUsers(q) {
+  q = q.trim().toLowerCase(); const col = collection(db, "users");
+  const qq = q ? query(col, where("usernameLower", ">=", q), where("usernameLower", "<=", q + "\uf8ff"), limit(15)) : query(col, orderBy("usernameLower"), limit(20));
+  return (await getDocs(qq)).docs.map(d => ({ uid: d.id, ...d.data() })).filter(u => u.uid !== S.uid);
+}
+function openNewChat() {
+  let mode = "direct", picked = new Map(), results = [], timer;
+  sheet("New chat", `<div class="seg"><button data-m="direct" class="on">Direct</button><button data-m="group">Group</button></div><div id="gName" hidden><input class="inp" id="gname" maxlength="60" placeholder="Group name"><div class="chips" id="chips" style="margin-top:8px"></div></div><input class="inp" id="q" autocomplete="off" autocapitalize="none" placeholder="Search by username"><div id="res"></div><button class="btn primary" id="mk" hidden>Create group</button>`, (b, close) => {
+    const res = $("#res", b), q = $("#q", b);
+    const draw = () => {
+      res.innerHTML = results.length ? results.map(u => `<button class="opt" data-u="${esc(u.uid)}">${avatar(u, 40)}<span class="grow"><b>${esc(u.displayName)}</b><div class="muted small">@${esc(u.username)}</div></span>${picked.has(u.uid) ? ic("check") : ""}</button>`).join("") : '<p class="muted small">No one found. Usernames are matched by prefix.</p>';
+      $("#chips", b).innerHTML = [...picked.values()].map(u => `<span class="chip">${esc(u.displayName)}<button data-r="${esc(u.uid)}" aria-label="Remove">${ic("x")}</button></span>`).join("");
+      $("#mk", b).hidden = mode !== "group"; $("#mk", b).disabled = picked.size < 1;
+    };
+    const run = async () => { try { results = await searchUsers(q.value); } catch (e) { results = []; toast(errMsg(e), true); } draw(); };
+    q.oninput = () => { clearTimeout(timer); timer = setTimeout(run, 250); };
+    $$(".seg button", b).forEach(x => x.onclick = () => { mode = x.dataset.m; $$(".seg button", b).forEach(y => y.classList.toggle("on", y === x)); $("#gName", b).hidden = mode !== "group"; picked.clear(); draw(); });
+    b.onclick = async e => {
+      const r = e.target.closest("[data-r]"); if (r) { picked.delete(r.dataset.r); draw(); return; }
+      const o = e.target.closest("[data-u]"); if (!o) return; const u = results.find(x => x.uid === o.dataset.u);
+      if (mode === "direct") { close(); startDirect(u); } else { picked.has(u.uid) ? picked.delete(u.uid) : picked.size < 11 ? picked.set(u.uid, u) : toast("Groups are limited to 12 people.", true); draw(); }
+    };
+    $("#mk", b).onclick = async () => { const name = $("#gname", b).value.trim(); if (!name) { toast("Give the group a name.", true); return; } $("#mk", b).disabled = true; await createGroup(name, [...picked.values()]); close(); };
+    run();
+  });
+}
+async function startDirect(u) {
+  const id = chatKeyId(S.uid, u.uid); if (S.chats.has(id)) { location.hash = "#/chat/" + id; return; }
+  try {
+    const parts = [S.uid, u.uid].sort();
+    await setDoc(chatRef(id), { type: "private", participants: parts, pubs: { [S.uid]: S.profile.pub, [u.uid]: u.pub }, state: {}, ttl: 0, lastMessage: null, createdBy: S.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    location.hash = "#/chat/" + id;
+  } catch (e) { toast(errMsg(e), true); }
+}
+async function createGroup(name, members) {
+  try {
+    const ref = doc(collection(db, "chats")), all = [S.profile, ...members], parts = all.map(u => u.uid || S.uid), pubs = {}, keys = {};
+    all.forEach(u => pubs[u.uid || S.uid] = u.pub);
+    const raw = crypto.getRandomValues(new Uint8Array(32));
+    for (const u of all) { const id = u.uid || S.uid; const kek = await Crypto.shared(S.priv, u.pub, "group:" + ref.id); keys[id] = { by: S.uid, ...(await Crypto.encBytes(kek, raw, ref.id)) }; }
+    await setDoc(ref, { type: "group", name, participants: parts, pubs, keys, state: {}, ttl: 0, lastMessage: null, createdBy: S.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    location.hash = "#/chat/" + ref.id;
+  } catch (e) { toast(errMsg(e), true); }
+}
+
+/* ---------- invites ---------- */
+const genCode = () => { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(16)); return [...r].map(x => A[x % 32]).join("").match(/.{4}/g).join("-"); };
+function openInvite() {
+  sheet("Invite a friend", `<p class="muted small">Each code works once and never expires until it's used. Anyone who joins with it gets a private chat with you.</p><div id="inv"></div><button class="btn primary" id="gen">${ic("userPlus")} Generate invite code</button><div class="sec">Your codes</div><div id="mine"><div class="spinner"></div></div>`, (b) => {
+    const link = c => `${location.origin}${location.pathname}#invite=${c}`;
+    const loadMine = async () => {
+      try {
+        const s = await getDocs(query(collection(db, "invites"), where("createdBy", "==", S.uid)));
+        const rows = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, c) => ms(c.createdAt) - ms(a.createdAt));
+        $("#mine", b).innerHTML = rows.length ? rows.map(r => `<div class="opt"><span class="grow"><b class="mono" style="font-family:ui-monospace,monospace">${esc(r.id)}</b><div class="muted small">${r.used ? "Used by " + esc(U(r.usedBy).displayName === "…" ? "a friend" : U(r.usedBy).displayName) : "Not used yet"}</div></span>${r.used ? "" : `<button class="btn ghost sm" data-del="${esc(r.id)}">Revoke</button>`}</div>`).join("") : '<p class="muted small">No codes yet.</p>';
+        rows.filter(r => r.used).forEach(r => watchUser(r.usedBy));
+      } catch (e) { $("#mine", b).textContent = errMsg(e); }
+    };
+    $("#gen", b).onclick = async () => {
+      const code = genCode(); $("#gen", b).disabled = true;
+      try {
+        await setDoc(doc(db, "invites", code), { createdBy: S.uid, createdByName: S.profile.displayName, createdByUsername: S.profile.username, pub: S.profile.pub, used: false, usedBy: null, createdAt: serverTimestamp() });
+        $("#inv", b).innerHTML = `<div class="code">${code}</div><div class="row" style="margin-top:10px"><button class="btn ghost sm grow" id="cc">${ic("copy")} Copy code</button><button class="btn primary sm grow" id="sh">${ic("share")} Share link</button></div>`;
+        $("#cc", b).onclick = async () => { try { await navigator.clipboard.writeText(code); toast("Code copied"); } catch { toast("Copy failed", true); } };
+        $("#sh", b).onclick = async () => { const text = `Join me on JayChat. Invite code: ${code}`; try { navigator.share ? await navigator.share({ title: "JayChat invite", text, url: link(code) }) : (await navigator.clipboard.writeText(text + "\n" + link(code)), toast("Invite link copied")); } catch { } };
+        loadMine();
+      } catch (e) { toast(errMsg(e), true); } $("#gen", b).disabled = false;
+    };
+    b.addEventListener("click", async e => { const d = e.target.closest("[data-del]"); if (!d) return; try { await deleteDoc(doc(db, "invites", d.dataset.del)); loadMine(); } catch (er) { toast(errMsg(er), true); } });
+    loadMine();
+  });
+}
+
+/* ---------- blocking / chat info ---------- */
+async function toggleBlock(uid) {
+  try {
+    const id = S.uid + "_" + uid;
+    if (S.blocks.has(uid)) { await deleteDoc(doc(db, "blocks", id)); toast("Unblocked"); }
+    else { await setDoc(doc(db, "blocks", id), { blocker: S.uid, blocked: uid, createdAt: serverTimestamp() }); toast("Blocked. They can no longer message you."); }
+  } catch (e) { toast(errMsg(e), true); }
+}
+async function openChatInfo() {
+  const c = S.chats.get(S.active); if (!c) return; const pu = c.type === "private" ? U(peerUid(c)) : null;
+  const members = c.type === "group" ? c.participants.map(U) : [];
+  const ttlSel = `<select class="inp" id="ttl">${TTL_OPTIONS.map(([v, l]) => `<option value="${v}" ${v === (c.ttl || 0) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+  sheet(c.type === "group" ? "Group info" : "Chat info", `
+    <div class="row">${c.type === "group" ? `<span class="av" style="--s:60px;--h:${hash(c.id) % 360}">${esc([...(c.name || "G")][0].toUpperCase())}</span>` : avatar(pu, 60, isOnline(pu))}<span class="grow"><b style="font-size:18px">${esc(chatTitle(c))}</b><div class="muted small">${c.type === "group" ? `${members.length} members` : "@" + esc(pu.username) + (seenText(pu) ? " \u2022 " + esc(seenText(pu)) : "")}</div></span></div>
+    ${members.length ? `<div class="sec">Members</div>${members.map(m => `<div class="opt">${avatar(m, 36)}<span class="grow"><b>${esc(m.displayName)}</b> <span class="muted small">@${esc(m.username)}</span></span></div>`).join("")}` : ""}
+    <div class="opt"><span class="grow">Mute notifications</span><button class="switch ${chatMuted(c.id) ? "on" : ""}" id="mute" role="switch" aria-checked="${chatMuted(c.id)}" aria-label="Mute"></button></div>
+    <div class="opt"><span class="grow">Disappearing messages<div class="muted small">Applies to new messages for everyone in this chat</div></span>${ttlSel}</div>
+    ${pu && !pu.deleted ? `<div class="sec">Encryption</div><div class="muted small">Compare this safety code with ${esc(pu.displayName)} in person to be sure nobody is in the middle.</div><div class="code" id="safety" style="font-size:16px">…</div>
+    <button class="opt ${S.blocks.has(pu.uid) ? "" : "danger"}" id="blk">${ic("ban")} ${S.blocks.has(pu.uid) ? "Unblock" : "Block"} ${esc(pu.displayName)}</button>` : ""}
+    <button class="opt danger" id="clr">${ic("trash")} Delete my messages here</button>
+    ${c.type === "group" ? `<button class="opt danger" id="lv">${ic("logout")} Leave group</button>` : peerGone(c) ? `<button class="opt danger" id="lv">${ic("trash")} Delete conversation</button>` : ""}`,
+    (b, close) => {
+      $("#mute", b).onclick = async e => { const on = !chatMuted(c.id); e.currentTarget.classList.toggle("on", on); await setPref({ muted: { ...S.prefs.muted, [c.id]: on } }); renderList(); };
+      $("#ttl", b).onchange = async e => { try { await updateDoc(chatRef(c.id), { ttl: +e.target.value }); toast(+e.target.value ? "Disappearing messages on" : "Disappearing messages off"); } catch (er) { toast(errMsg(er), true); } };
+      if (pu && !pu.deleted) { Crypto.safety(c.pubs[S.uid], c.pubs[pu.uid]).then(t => { const e = $("#safety", b); if (e) e.textContent = t; }); $("#blk", b).onclick = async () => { close(); await toggleBlock(pu.uid); }; }
+      $("#clr", b).onclick = async () => { close(); if (await confirmSheet("Delete your messages?", "This removes every message you sent in this chat, for everyone.", "Delete")) { await purgeMyMessages(c); toast("Your messages were deleted"); } };
+      $("#lv", b)?.addEventListener("click", async () => { close(); if (await confirmSheet(c.type === "group" ? "Leave this group?" : "Delete this conversation?", "Your messages in it will be deleted.", c.type === "group" ? "Leave" : "Delete")) { try { await leaveChat(c); location.hash = ""; } catch (e) { toast(errMsg(e), true); } } });
+    });
+}
+async function purgeMyMessages(c) {
+  const s = await getDocs(query(collection(db, "chats", c.id, "messages"), where("sender", "==", S.uid)));
+  const docs = s.docs; for (let i = 0; i < docs.length; i += 400) { const b = writeBatch(db); docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }
+  await Promise.all(docs.filter(d => d.data().img?.path).map(d => deleteObject(sref(storage, d.data().img.path)).catch(() => { })));
+}
+async function leaveChat(c) {
+  await purgeMyMessages(c);
+  if (c.participants.length <= 1) await deleteDoc(chatRef(c.id));
+  else await updateDoc(chatRef(c.id), { participants: c.participants.filter(p => p !== S.uid), [`state.${S.uid}`]: deleteField() });
+}
+
+/* ---------- settings ---------- */
+function openSettings() {
+  const sw = (id, on, label, sub) => `<div class="opt"><span class="grow">${label}${sub ? `<div class="muted small">${sub}</div>` : ""}</span><button class="switch ${on ? "on" : ""}" id="${id}" role="switch" aria-checked="${on}" aria-label="${label}"></button></div>`;
+  const ttlSel = `<select class="inp" id="gttl">${TTL_OPTIONS.map(([v, l]) => `<option value="${v}" ${v === (S.prefs.globalTtl || 0) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+  const blocked = [...S.blocks].map(U);
+  sheet("Settings", `
+    <div class="row"><button id="chAv" aria-label="Change photo">${avatar(S.profile, 64)}</button><span class="grow"><b style="font-size:18px">${esc(S.profile.displayName)}</b><div class="muted small">@${esc(S.profile.username)}</div></span></div>
+    <div class="field"><label for="dn">Display name</label><div class="row"><input class="inp" id="dn" maxlength="40" value="${esc(S.profile.displayName)}"><button class="btn ghost sm" id="dnSave">Save</button></div></div>
+    <div class="sec">Appearance</div>${sw("sTheme", document.documentElement.dataset.theme === "dark", "Dark mode")}
+    <div class="sec">Privacy</div>
+    ${sw("sPres", S.prefs.presence, "Online & last seen", "Turn off to hide yours and stop seeing others'")}
+    ${sw("sTyp", S.prefs.typing, "Typing indicators")}
+    ${sw("sRec", S.prefs.receipts, "Read receipts", "Turn off to hide yours and stop seeing others'")}
+    <div class="opt"><span class="grow">Disappearing messages<div class="muted small">Default for messages you send</div></span>${ttlSel}</div>
+    <div class="sec">Notifications</div>${sw("sNot", S.prefs.notify && "Notification" in window && Notification.permission === "granted", "Message notifications", VAPID_KEY ? "" : "Shown while JayChat is open or in the background")}
+    <div class="sec">Friends</div><button class="opt" id="sInv">${ic("userPlus")} Invite a friend</button>
+    ${blocked.length ? `<div class="sec">Blocked</div>${blocked.map(u => `<div class="opt"><span class="grow">${esc(u.displayName)} <span class="muted small">@${esc(u.username)}</span></span><button class="btn ghost sm" data-ub="${esc(u.uid)}">Unblock</button></div>`).join("")}` : ""}
+    <div class="sec">App</div>${S.installEvt ? `<button class="opt" id="sInst">${ic("download")} Install JayChat</button>` : '<p class="muted small">To install on iPhone: Share, then Add to Home Screen. On Android: browser menu, then Install app.</p>'}
+    <button class="opt" id="sOut">${ic("logout")} Sign out of this device</button>
+    <button class="opt danger" id="sDel">${ic("trash")} Delete my account</button>`, (b, close) => {
+    const tog = (id, key, extra) => $(id, b).onclick = async e => { const on = !S.prefs[key]; e.currentTarget.classList.toggle("on", on); await setPref({ [key]: on }); extra?.(on); };
+    $("#sTheme", b).onclick = e => { toggleTheme(); e.currentTarget.classList.toggle("on", document.documentElement.dataset.theme === "dark"); };
+    tog("#sPres", "presence", () => setPresence(true)); tog("#sTyp", "typing"); tog("#sRec", "receipts");
+    $("#gttl", b).onchange = e => setPref({ globalTtl: +e.target.value });
+    $("#sNot", b).onclick = async e => { const el = e.currentTarget; if (el.classList.contains("on")) { el.classList.remove("on"); await setPref({ notify: false }); } else { const ok = await enablePush(); el.classList.toggle("on", ok); await setPref({ notify: ok }); } };
+    $("#dnSave", b).onclick = async () => { const v = $("#dn", b).value.trim(); if (!v) return; try { await updateDoc(userRef(S.uid), { displayName: v }); toast("Saved"); } catch (e) { toast(errMsg(e), true); } };
+    $("#chAv", b).onclick = () => { const f = $("#filePick"); f.onchange = async () => { const file = f.files[0]; f.value = ""; if (!file) return; try { toast("Uploading photo…"); await uploadAvatar(S.uid, (await resizeImage(file, 320, .85, true)).blob); toast("Photo updated"); close(); } catch (e) { toast(errMsg(e), true); } }; f.click(); };
+    $("#sInv", b).onclick = () => { close(); openInvite(); };
+    $("#sInst", b)?.addEventListener("click", async () => { S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt = null; close(); });
+    $$("[data-ub]", b).forEach(x => x.onclick = async () => { await toggleBlock(x.dataset.ub); close(); });
+    $("#sOut", b).onclick = async () => { close(); if (await confirmSheet("Sign out?", "You'll need your recovery key to sign back in. Encrypted data on this device will be erased.", "Sign out")) doSignOut(); };
+    $("#sDel", b).onclick = () => { close(); openDelete(); };
+  });
+}
+function openDelete() {
+  sheet("Delete account", `<p class="muted small">This permanently deletes your profile, username, photo, invites and every message you sent. Chats you were in stay for the other people. This can't be undone.</p><div class="field"><label for="dk">Enter your recovery key to confirm</label><input class="inp mono" id="dk" autocomplete="off" autocapitalize="characters" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></div><div class="err" id="de"></div><button class="btn danger" id="dgo">Delete everything</button>`, (b, close) => {
+    $("#dgo", b).onclick = async () => {
+      const btn = $("#dgo", b); btn.disabled = true; btn.textContent = "Deleting…"; $("#de", b).textContent = "";
+      try { await deleteAccount($("#dk", b).value); }
+      catch (e) { console.error(e); $("#de", b).textContent = errMsg(e); btn.disabled = false; btn.textContent = "Delete everything"; }
+    };
+  });
+}
+async function deleteAccount(recoveryKey) {
+  const user = auth.currentUser, uid = S.uid;
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, await Crypto.authPassword(recoveryKey)));
+  S.msgUnsub?.(); S.msgUnsub = null;
+  for (const c of [...S.chats.values()]) { try { await leaveChat(c); } catch (e) { console.warn("leave", e); } }
+  const swallow = p => p.catch(e => console.warn(e));
+  const inv = await getDocs(query(collection(db, "invites"), where("createdBy", "==", uid))); await Promise.all(inv.docs.map(d => swallow(deleteDoc(d.ref))));
+  const bl = await getDocs(query(collection(db, "blocks"), where("blocker", "==", uid))); await Promise.all(bl.docs.map(d => swallow(deleteDoc(d.ref))));
+  await swallow(deleteObject(sref(storage, "avatars/" + uid)));
+  await swallow(deleteDoc(doc(db, "users", uid, "private", "prefs"))); await swallow(deleteDoc(doc(db, "users", uid, "private", "keys")));
+  await deleteDoc(doc(db, "usernames", S.profile.usernameLower)); await deleteDoc(userRef(uid));
+  stopSession(); await deleteUser(user); await idb.clear();
+  try { await terminate(db); await clearIndexedDbPersistence(db); } catch { }
+  location.replace(location.pathname);
+}
+
+/* ============================ INIT ============================ */
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); S.installEvt = e; });
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW", e));
+  navigator.serviceWorker.addEventListener("message", e => { if (e.data?.chat && S.uid) location.hash = "#/chat/" + e.data.chat; });
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") { const l = $("#lightbox"); if (!l.hidden) l.hidden = true; else $$(".sheet-wrap .x").pop()?.click(); } });
+</script>
+</body>
+</html>
